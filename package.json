@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "prepare": "nitro prepare",
+    "preview": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.2",
+    "ethers": "6.14.3"
+  },
+  "devDependencies": {
+    "nitropack": "latest"
+  }
+}
