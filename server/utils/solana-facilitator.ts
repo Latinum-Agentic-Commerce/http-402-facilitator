@@ -19,7 +19,7 @@ export async function validateSolanaPayment({
         console.log('[Solana] 📥 Validating payment request')
 
         if (!signedTransactionB64 || !expectedRecipient || !expectedAmountLamports) {
-            return { allowed: false, error: 'Missing required fields' }
+            return { allowed: false, error: `💳 Payment required: ${expectedAmountLamports} lamports to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
         }
 
         const txBytes = base64js.toByteArray(signedTransactionB64)
