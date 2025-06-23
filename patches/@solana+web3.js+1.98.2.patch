@@ -1,0 +1,4377 @@
+diff --git a/node_modules/@solana/web3.js/lib/index.browser.esm.js b/node_modules/@solana/web3.js/lib/index.browser.esm.js
+index fb8ab82..527015c 100644
+--- a/node_modules/@solana/web3.js/lib/index.browser.esm.js
++++ b/node_modules/@solana/web3.js/lib/index.browser.esm.js
+@@ -8,7 +8,7 @@ import * as BufferLayout from '@solana/buffer-layout';
+ import { blob } from '@solana/buffer-layout';
+ import { getU64Codec, getU64Encoder } from '@solana/codecs-numbers';
+ import { coerce, instance, string, tuple, literal, unknown, type, number, array, nullable, optional, boolean, record, union, create, any, assert as assert$1 } from 'superstruct';
+-import RpcClient from 'jayson/lib/client/browser';
++import RpcClient from 'jayson/lib/client/browser/index.js';
+ import { CommonClient, WebSocket } from 'rpc-websockets';
+ import { keccak_256 } from '@noble/hashes/sha3';
+ import { secp256k1 } from '@noble/curves/secp256k1';
+@@ -543,7 +543,7 @@ function getAlloc(type, fields) {
+ function decodeLength(bytes) {
+   let len = 0;
+   let size = 0;
+-  for (;;) {
++  for (; ;) {
+     let elem = bytes.shift();
+     len |= (elem & 0x7f) << size * 7;
+     size += 1;
+@@ -555,7 +555,7 @@ function decodeLength(bytes) {
+ }
+ function encodeLength(bytes, len) {
+   let rem_len = len;
+-  for (;;) {
++  for (; ;) {
+     let elem = rem_len & 0x7f;
+     rem_len >>= 7;
+     if (rem_len == 0) {
+@@ -568,7 +568,7 @@ function encodeLength(bytes, len) {
+   }
+ }
+ 
+-function assert (condition, message) {
++function assert(condition, message) {
+   if (!condition) {
+     throw new Error(message || 'Assertion failed');
+   }
+@@ -688,7 +688,7 @@ function guardedShift(byteArray) {
+ function guardedSplice(byteArray, ...args) {
+   const [start] = args;
+   if (args.length === 2 // Implies that `deleteCount` was supplied
+-  ? start + (args[1] ?? 0) > byteArray.length : start >= byteArray.length) {
++    ? start + (args[1] ?? 0) > byteArray.length : start >= byteArray.length) {
+     throw new Error(END_OF_BUFFER_ERROR_MESSAGE);
+   }
+   return byteArray.splice(...args);
+@@ -1982,8 +1982,8 @@ class TransactionMessage {
+           isWritable = keyIndex - numRequiredSignatures < numWritableUnsignedAccounts;
+         } else {
+           isWritable = keyIndex - accountKeys.staticAccountKeys.length <
+-          // accountKeysFromLookups cannot be undefined because we already found a pubkey for this index above
+-          accountKeys.accountKeysFromLookups.writable.length;
++            // accountKeysFromLookups cannot be undefined because we already found a pubkey for this index above
++            accountKeys.accountKeysFromLookups.writable.length;
+         }
+         keys.push({
+           pubkey,
+@@ -2457,7 +2457,7 @@ class SystemInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a system instruction and retrieve the instruction type.
+@@ -2780,7 +2780,7 @@ class SystemProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the System program
+@@ -3137,7 +3137,7 @@ class Loader {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Amount of program data placed in each load Transaction
+@@ -3151,11 +3151,11 @@ class Loader {
+    */
+   static getMinNumSignatures(dataLength) {
+     return 2 * (
+-    // Every transaction requires two signatures (payer + program)
+-    Math.ceil(dataLength / Loader.chunkSize) + 1 +
+-    // Add one for Create transaction
+-    1) // Add one for Finalize transaction
+-    ;
++      // Every transaction requires two signatures (payer + program)
++      Math.ceil(dataLength / Loader.chunkSize) + 1 +
++      // Add one for Create transaction
++      1) // Add one for Finalize transaction
++      ;
+   }
+ 
+   /**
+@@ -3354,90 +3354,90 @@ class BpfLoader {
+   }
+ }
+ 
+-function getDefaultExportFromCjs (x) {
+-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
++function getDefaultExportFromCjs(x) {
++  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+ }
+ 
+ var fastStableStringify$1;
+ var hasRequiredFastStableStringify;
+ 
+-function requireFastStableStringify () {
+-	if (hasRequiredFastStableStringify) return fastStableStringify$1;
+-	hasRequiredFastStableStringify = 1;
+-	var objToString = Object.prototype.toString;
+-	var objKeys = Object.keys || function(obj) {
+-			var keys = [];
+-			for (var name in obj) {
+-				keys.push(name);
+-			}
+-			return keys;
+-		};
+-
+-	function stringify(val, isArrayProp) {
+-		var i, max, str, keys, key, propVal, toStr;
+-		if (val === true) {
+-			return "true";
+-		}
+-		if (val === false) {
+-			return "false";
+-		}
+-		switch (typeof val) {
+-			case "object":
+-				if (val === null) {
+-					return null;
+-				} else if (val.toJSON && typeof val.toJSON === "function") {
+-					return stringify(val.toJSON(), isArrayProp);
+-				} else {
+-					toStr = objToString.call(val);
+-					if (toStr === "[object Array]") {
+-						str = '[';
+-						max = val.length - 1;
+-						for(i = 0; i < max; i++) {
+-							str += stringify(val[i], true) + ',';
+-						}
+-						if (max > -1) {
+-							str += stringify(val[i], true);
+-						}
+-						return str + ']';
+-					} else if (toStr === "[object Object]") {
+-						// only object is left
+-						keys = objKeys(val).sort();
+-						max = keys.length;
+-						str = "";
+-						i = 0;
+-						while (i < max) {
+-							key = keys[i];
+-							propVal = stringify(val[key], false);
+-							if (propVal !== undefined) {
+-								if (str) {
+-									str += ',';
+-								}
+-								str += JSON.stringify(key) + ':' + propVal;
+-							}
+-							i++;
+-						}
+-						return '{' + str + '}';
+-					} else {
+-						return JSON.stringify(val);
+-					}
+-				}
+-			case "function":
+-			case "undefined":
+-				return isArrayProp ? null : undefined;
+-			case "string":
+-				return JSON.stringify(val);
+-			default:
+-				return isFinite(val) ? val : null;
+-		}
+-	}
+-
+-	fastStableStringify$1 = function(val) {
+-		var returnVal = stringify(val, false);
+-		if (returnVal !== undefined) {
+-			return ''+ returnVal;
+-		}
+-	};
+-	return fastStableStringify$1;
++function requireFastStableStringify() {
++  if (hasRequiredFastStableStringify) return fastStableStringify$1;
++  hasRequiredFastStableStringify = 1;
++  var objToString = Object.prototype.toString;
++  var objKeys = Object.keys || function (obj) {
++    var keys = [];
++    for (var name in obj) {
++      keys.push(name);
++    }
++    return keys;
++  };
++
++  function stringify(val, isArrayProp) {
++    var i, max, str, keys, key, propVal, toStr;
++    if (val === true) {
++      return "true";
++    }
++    if (val === false) {
++      return "false";
++    }
++    switch (typeof val) {
++      case "object":
++        if (val === null) {
++          return null;
++        } else if (val.toJSON && typeof val.toJSON === "function") {
++          return stringify(val.toJSON(), isArrayProp);
++        } else {
++          toStr = objToString.call(val);
++          if (toStr === "[object Array]") {
++            str = '[';
++            max = val.length - 1;
++            for (i = 0; i < max; i++) {
++              str += stringify(val[i], true) + ',';
++            }
++            if (max > -1) {
++              str += stringify(val[i], true);
++            }
++            return str + ']';
++          } else if (toStr === "[object Object]") {
++            // only object is left
++            keys = objKeys(val).sort();
++            max = keys.length;
++            str = "";
++            i = 0;
++            while (i < max) {
++              key = keys[i];
++              propVal = stringify(val[key], false);
++              if (propVal !== undefined) {
++                if (str) {
++                  str += ',';
++                }
++                str += JSON.stringify(key) + ':' + propVal;
++              }
++              i++;
++            }
++            return '{' + str + '}';
++          } else {
++            return JSON.stringify(val);
++          }
++        }
++      case "function":
++      case "undefined":
++        return isArrayProp ? null : undefined;
++      case "string":
++        return JSON.stringify(val);
++      default:
++        return isFinite(val) ? val : null;
++    }
++  }
++
++  fastStableStringify$1 = function (val) {
++    var returnVal = stringify(val, false);
++    if (returnVal !== undefined) {
++      return '' + returnVal;
++    }
++  };
++  return fastStableStringify$1;
+ }
+ 
+ var fastStableStringifyExports = /*@__PURE__*/ requireFastStableStringify();
+@@ -3631,18 +3631,18 @@ function makeWebsocketUrl(endpoint) {
+     throw TypeError(`Failed to validate endpoint URL \`${endpoint}\``);
+   }
+   const [_,
+-  // eslint-disable-line @typescript-eslint/no-unused-vars
+-  hostish, portWithColon, rest] = matches;
++    // eslint-disable-line @typescript-eslint/no-unused-vars
++    hostish, portWithColon, rest] = matches;
+   const protocol = endpoint.startsWith('https:') ? 'wss:' : 'ws:';
+   const startPort = portWithColon == null ? null : parseInt(portWithColon.slice(1), 10);
+   const websocketPort =
+-  // Only shift the port by +1 as a convention for ws(s) only if given endpoint
+-  // is explicitly specifying the endpoint port (HTTP-based RPC), assuming
+-  // we're directly trying to connect to agave-validator's ws listening port.
+-  // When the endpoint omits the port, we're connecting to the protocol
+-  // default ports: http(80) or https(443) and it's assumed we're behind a reverse
+-  // proxy which manages WebSocket upgrade and backend port redirection.
+-  startPort == null ? '' : `:${startPort + 1}`;
++    // Only shift the port by +1 as a convention for ws(s) only if given endpoint
++    // is explicitly specifying the endpoint port (HTTP-based RPC), assuming
++    // we're directly trying to connect to agave-validator's ws listening port.
++    // When the endpoint omits the port, we're connecting to the protocol
++    // default ports: http(80) or https(443) and it's assumed we're behind a reverse
++    // proxy which manages WebSocket upgrade and backend port redirection.
++    startPort == null ? '' : `:${startPort + 1}`;
+   return `${protocol}//${hostish}${websocketPort}${rest}`;
+ }
+ 
+@@ -4279,7 +4279,7 @@ function createRpcClient(url, httpHeaders, customFetch, fetchMiddleware, disable
+       let too_many_requests_retries = 5;
+       let res;
+       let waitTime = 500;
+-      for (;;) {
++      for (; ;) {
+         if (fetchWithMiddleware) {
+           res = await fetchWithMiddleware(url, options);
+         } else {
+@@ -6036,7 +6036,7 @@ class Connection {
+             default:
+               // Exhaustive switch.
+               // eslint-disable-next-line @typescript-eslint/no-unused-vars
+-              (_ => {})(commitmentForStatus);
++              (_ => { })(commitmentForStatus);
+           }
+           result = {
+             context: signatureStatus.context,
+@@ -7260,7 +7260,7 @@ class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash = await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+         transaction.recentBlockhash = latestBlockhash.blockhash;
+@@ -7360,7 +7360,7 @@ class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash = await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+         transaction.recentBlockhash = latestBlockhash.blockhash;
+@@ -7407,7 +7407,7 @@ class Connection {
+     };
+     const skipPreflight = options && options.skipPreflight;
+     const preflightCommitment = skipPreflight === true ? 'processed' // FIXME Remove when https://github.com/anza-xyz/agave/pull/483 is deployed.
+-    : options && options.preflightCommitment || this.commitment;
++      : options && options.preflightCommitment || this.commitment;
+     if (options && options.maxRetries != null) {
+       config.maxRetries = options.maxRetries;
+     }
+@@ -7449,7 +7449,7 @@ class Connection {
+         try {
+           await this._rpcWebSocket.notify('ping');
+           // eslint-disable-next-line no-empty
+-        } catch {}
++        } catch { }
+       })();
+     }, 5000);
+     this._updateSubscriptions();
+@@ -7506,7 +7506,7 @@ class Connection {
+           try {
+             cb(nextSubscription.state);
+             // eslint-disable-next-line no-empty
+-          } catch {}
++          } catch { }
+         });
+       }
+     }
+@@ -7518,7 +7518,7 @@ class Connection {
+   _onSubscriptionStateChange(clientSubscriptionId, callback) {
+     const hash = this._subscriptionHashByClientSubscriptionId[clientSubscriptionId];
+     if (hash == null) {
+-      return () => {};
++      return () => { };
+     }
+     const stateChangeCallbacks = this._subscriptionStateChangeCallbacksByHash[hash] ||= new Set();
+     stateChangeCallbacks.add(callback);
+@@ -7565,133 +7565,133 @@ class Connection {
+       return activeWebSocketGeneration === this._rpcWebSocketGeneration;
+     };
+     await Promise.all(
+-    // Don't be tempted to change this to `Object.entries`. We call
+-    // `_updateSubscriptions` recursively when processing the state,
+-    // so it's important that we look up the *current* version of
+-    // each subscription, every time we process a hash.
+-    Object.keys(this._subscriptionsByHash).map(async hash => {
+-      const subscription = this._subscriptionsByHash[hash];
+-      if (subscription === undefined) {
+-        // This entry has since been deleted. Skip.
+-        return;
+-      }
+-      switch (subscription.state) {
+-        case 'pending':
+-        case 'unsubscribed':
+-          if (subscription.callbacks.size === 0) {
+-            /**
+-             * You can end up here when:
+-             *
+-             * - a subscription has recently unsubscribed
+-             *   without having new callbacks added to it
+-             *   while the unsubscribe was in flight, or
+-             * - when a pending subscription has its
+-             *   listeners removed before a request was
+-             *   sent to the server.
+-             *
+-             * Being that nobody is interested in this
+-             * subscription any longer, delete it.
+-             */
+-            delete this._subscriptionsByHash[hash];
+-            if (subscription.state === 'unsubscribed') {
+-              delete this._subscriptionCallbacksByServerSubscriptionId[subscription.serverSubscriptionId];
+-            }
+-            await this._updateSubscriptions();
+-            return;
+-          }
+-          await (async () => {
+-            const {
+-              args,
+-              method
+-            } = subscription;
+-            try {
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'subscribing'
+-              });
+-              const serverSubscriptionId = await this._rpcWebSocket.call(method, args);
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                serverSubscriptionId,
+-                state: 'subscribed'
+-              });
+-              this._subscriptionCallbacksByServerSubscriptionId[serverSubscriptionId] = subscription.callbacks;
+-              await this._updateSubscriptions();
+-            } catch (e) {
+-              console.error(`Received ${e instanceof Error ? '' : 'JSON-RPC '}error calling \`${method}\``, {
+-                args,
+-                error: e
+-              });
+-              if (!isCurrentConnectionStillActive()) {
+-                return;
++      // Don't be tempted to change this to `Object.entries`. We call
++      // `_updateSubscriptions` recursively when processing the state,
++      // so it's important that we look up the *current* version of
++      // each subscription, every time we process a hash.
++      Object.keys(this._subscriptionsByHash).map(async hash => {
++        const subscription = this._subscriptionsByHash[hash];
++        if (subscription === undefined) {
++          // This entry has since been deleted. Skip.
++          return;
++        }
++        switch (subscription.state) {
++          case 'pending':
++          case 'unsubscribed':
++            if (subscription.callbacks.size === 0) {
++              /**
++               * You can end up here when:
++               *
++               * - a subscription has recently unsubscribed
++               *   without having new callbacks added to it
++               *   while the unsubscribe was in flight, or
++               * - when a pending subscription has its
++               *   listeners removed before a request was
++               *   sent to the server.
++               *
++               * Being that nobody is interested in this
++               * subscription any longer, delete it.
++               */
++              delete this._subscriptionsByHash[hash];
++              if (subscription.state === 'unsubscribed') {
++                delete this._subscriptionCallbacksByServerSubscriptionId[subscription.serverSubscriptionId];
+               }
+-              // TODO: Maybe add an 'errored' state or a retry limit?
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'pending'
+-              });
+               await this._updateSubscriptions();
++              return;
+             }
+-          })();
+-          break;
+-        case 'subscribed':
+-          if (subscription.callbacks.size === 0) {
+-            // By the time we successfully set up a subscription
+-            // with the server, the client stopped caring about it.
+-            // Tear it down now.
+             await (async () => {
+               const {
+-                serverSubscriptionId,
+-                unsubscribeMethod
++                args,
++                method
+               } = subscription;
+-              if (this._subscriptionsAutoDisposedByRpc.has(serverSubscriptionId)) {
+-                /**
+-                 * Special case.
+-                 * If we're dealing with a subscription that has been auto-
+-                 * disposed by the RPC, then we can skip the RPC call to
+-                 * tear down the subscription here.
+-                 *
+-                 * NOTE: There is a proposal to eliminate this special case, here:
+-                 * https://github.com/solana-labs/solana/issues/18892
+-                 */
+-                this._subscriptionsAutoDisposedByRpc.delete(serverSubscriptionId);
+-              } else {
++              try {
+                 this._setSubscription(hash, {
+                   ...subscription,
+-                  state: 'unsubscribing'
++                  state: 'subscribing'
+                 });
++                const serverSubscriptionId = await this._rpcWebSocket.call(method, args);
+                 this._setSubscription(hash, {
+                   ...subscription,
+-                  state: 'unsubscribing'
++                  serverSubscriptionId,
++                  state: 'subscribed'
+                 });
+-                try {
+-                  await this._rpcWebSocket.call(unsubscribeMethod, [serverSubscriptionId]);
+-                } catch (e) {
+-                  if (e instanceof Error) {
+-                    console.error(`${unsubscribeMethod} error:`, e.message);
+-                  }
+-                  if (!isCurrentConnectionStillActive()) {
+-                    return;
+-                  }
+-                  // TODO: Maybe add an 'errored' state or a retry limit?
+-                  this._setSubscription(hash, {
+-                    ...subscription,
+-                    state: 'subscribed'
+-                  });
+-                  await this._updateSubscriptions();
++                this._subscriptionCallbacksByServerSubscriptionId[serverSubscriptionId] = subscription.callbacks;
++                await this._updateSubscriptions();
++              } catch (e) {
++                console.error(`Received ${e instanceof Error ? '' : 'JSON-RPC '}error calling \`${method}\``, {
++                  args,
++                  error: e
++                });
++                if (!isCurrentConnectionStillActive()) {
+                   return;
+                 }
++                // TODO: Maybe add an 'errored' state or a retry limit?
++                this._setSubscription(hash, {
++                  ...subscription,
++                  state: 'pending'
++                });
++                await this._updateSubscriptions();
+               }
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'unsubscribed'
+-              });
+-              await this._updateSubscriptions();
+             })();
+-          }
+-          break;
+-      }
+-    }));
++            break;
++          case 'subscribed':
++            if (subscription.callbacks.size === 0) {
++              // By the time we successfully set up a subscription
++              // with the server, the client stopped caring about it.
++              // Tear it down now.
++              await (async () => {
++                const {
++                  serverSubscriptionId,
++                  unsubscribeMethod
++                } = subscription;
++                if (this._subscriptionsAutoDisposedByRpc.has(serverSubscriptionId)) {
++                  /**
++                   * Special case.
++                   * If we're dealing with a subscription that has been auto-
++                   * disposed by the RPC, then we can skip the RPC call to
++                   * tear down the subscription here.
++                   *
++                   * NOTE: There is a proposal to eliminate this special case, here:
++                   * https://github.com/solana-labs/solana/issues/18892
++                   */
++                  this._subscriptionsAutoDisposedByRpc.delete(serverSubscriptionId);
++                } else {
++                  this._setSubscription(hash, {
++                    ...subscription,
++                    state: 'unsubscribing'
++                  });
++                  this._setSubscription(hash, {
++                    ...subscription,
++                    state: 'unsubscribing'
++                  });
++                  try {
++                    await this._rpcWebSocket.call(unsubscribeMethod, [serverSubscriptionId]);
++                  } catch (e) {
++                    if (e instanceof Error) {
++                      console.error(`${unsubscribeMethod} error:`, e.message);
++                    }
++                    if (!isCurrentConnectionStillActive()) {
++                      return;
++                    }
++                    // TODO: Maybe add an 'errored' state or a retry limit?
++                    this._setSubscription(hash, {
++                      ...subscription,
++                      state: 'subscribed'
++                    });
++                    await this._updateSubscriptions();
++                    return;
++                  }
++                }
++                this._setSubscription(hash, {
++                  ...subscription,
++                  state: 'unsubscribed'
++                });
++                await this._updateSubscriptions();
++              })();
++            }
++            break;
++        }
++      }));
+   }
+ 
+   /**
+@@ -7705,11 +7705,11 @@ class Connection {
+     callbacks.forEach(cb => {
+       try {
+         cb(
+-        // I failed to find a way to convince TypeScript that `cb` is of type
+-        // `TCallback` which is certainly compatible with `Parameters<TCallback>`.
+-        // See https://github.com/microsoft/TypeScript/issues/47615
+-        // @ts-ignore
+-        ...callbackArgs);
++          // I failed to find a way to convince TypeScript that `cb` is of type
++          // `TCallback` which is certainly compatible with `Parameters<TCallback>`.
++          // See https://github.com/microsoft/TypeScript/issues/47615
++          // @ts-ignore
++          ...callbackArgs);
+       } catch (e) {
+         console.error(e);
+       }
+@@ -7731,31 +7731,31 @@ class Connection {
+    * @internal
+    */
+   _makeSubscription(subscriptionConfig,
+-  /**
+-   * When preparing `args` for a call to `_makeSubscription`, be sure
+-   * to carefully apply a default `commitment` property, if necessary.
+-   *
+-   * - If the user supplied a `commitment` use that.
+-   * - Otherwise, if the `Connection::commitment` is set, use that.
+-   * - Otherwise, set it to the RPC server default: `finalized`.
+-   *
+-   * This is extremely important to ensure that these two fundamentally
+-   * identical subscriptions produce the same identifying hash:
+-   *
+-   * - A subscription made without specifying a commitment.
+-   * - A subscription made where the commitment specified is the same
+-   *   as the default applied to the subscription above.
+-   *
+-   * Example; these two subscriptions must produce the same hash:
+-   *
+-   * - An `accountSubscribe` subscription for `'PUBKEY'`
+-   * - An `accountSubscribe` subscription for `'PUBKEY'` with commitment
+-   *   `'finalized'`.
+-   *
+-   * See the 'making a subscription with defaulted params omitted' test
+-   * in `connection-subscriptions.ts` for more.
+-   */
+-  args) {
++    /**
++     * When preparing `args` for a call to `_makeSubscription`, be sure
++     * to carefully apply a default `commitment` property, if necessary.
++     *
++     * - If the user supplied a `commitment` use that.
++     * - Otherwise, if the `Connection::commitment` is set, use that.
++     * - Otherwise, set it to the RPC server default: `finalized`.
++     *
++     * This is extremely important to ensure that these two fundamentally
++     * identical subscriptions produce the same identifying hash:
++     *
++     * - A subscription made without specifying a commitment.
++     * - A subscription made where the commitment specified is the same
++     *   as the default applied to the subscription above.
++     *
++     * Example; these two subscriptions must produce the same hash:
++     *
++     * - An `accountSubscribe` subscription for `'PUBKEY'`
++     * - An `accountSubscribe` subscription for `'PUBKEY'` with commitment
++     *   `'finalized'`.
++     *
++     * See the 'making a subscription with defaulted params omitted' test
++     * in `connection-subscriptions.ts` for more.
++     */
++    args) {
+     const clientSubscriptionId = this._nextClientSubscriptionId++;
+     const hash = fastStableStringify([subscriptionConfig.method, args]);
+     const existingSubscription = this._subscriptionsByHash[hash];
+@@ -7801,8 +7801,8 @@ class Connection {
+       config
+     } = extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs([publicKey.toBase58()], commitment || this._commitment || 'finalized',
+-    // Apply connection/server default.
+-    'base64', config);
++      // Apply connection/server default.
++      'base64', config);
+     return this._makeSubscription({
+       callback,
+       method: 'accountSubscribe',
+@@ -7853,10 +7853,10 @@ class Connection {
+       config
+     } = extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs([programId.toBase58()], commitment || this._commitment || 'finalized',
+-    // Apply connection/server default.
+-    'base64' /* encoding */, config ? config : maybeFilters ? {
+-      filters: applyDefaultMemcmpEncodingToFilters(maybeFilters)
+-    } : undefined /* extra */);
++      // Apply connection/server default.
++      'base64' /* encoding */, config ? config : maybeFilters ? {
++        filters: applyDefaultMemcmpEncodingToFilters(maybeFilters)
++      } : undefined /* extra */);
+     return this._makeSubscription({
+       callback,
+       method: 'programSubscribe',
+@@ -8294,7 +8294,7 @@ class AddressLookupTableInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+   static decodeInstructionType(instruction) {
+     this.checkProgramId(instruction.programId);
+     const instructionTypeLayout = BufferLayout.u32('instruction');
+@@ -8385,7 +8385,7 @@ class AddressLookupTableProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+   static createLookupTable(params) {
+     const [lookupTableAddress, bumpSeed] = PublicKey.findProgramAddressSync([params.authority.toBuffer(), getU64Encoder().encode(params.recentSlot)], this.programId);
+     const type = LOOKUP_TABLE_INSTRUCTION_LAYOUTS.CreateLookupTable;
+@@ -8515,7 +8515,7 @@ class ComputeBudgetInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a compute budget instruction and retrieve the instruction type.
+@@ -8651,7 +8651,7 @@ class ComputeBudgetProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Compute Budget program
+@@ -8718,7 +8718,7 @@ class Ed25519Program {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the ed25519 program
+@@ -8744,7 +8744,7 @@ class Ed25519Program {
+     const numSignatures = 1;
+     const instructionData = Buffer.alloc(messageDataOffset + message.length);
+     const index = instructionIndex == null ? 0xffff // An index of `u16::MAX` makes it default to the current instruction.
+-    : instructionIndex;
++      : instructionIndex;
+     ED25519_INSTRUCTION_LAYOUT.encode({
+       numSignatures,
+       padding: 0,
+@@ -8823,7 +8823,7 @@ class Secp256k1Program {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the secp256k1 program
+@@ -9034,7 +9034,7 @@ class StakeInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a stake instruction and retrieve the instruction type.
+@@ -9289,7 +9289,7 @@ class StakeProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Stake program
+@@ -9557,8 +9557,8 @@ class StakeProgram {
+    * Generate a Transaction that splits Stake tokens into another stake account
+    */
+   static split(params,
+-  // Compute the cost of allocating the new stake account in lamports
+-  rentExemptReserve) {
++    // Compute the cost of allocating the new stake account in lamports
++    rentExemptReserve) {
+     const transaction = new Transaction();
+     transaction.add(SystemProgram.createAccount({
+       fromPubkey: params.authorizedPubkey,
+@@ -9575,8 +9575,8 @@ class StakeProgram {
+    * derived from a base public key and seed
+    */
+   static splitWithSeed(params,
+-  // If this stake account is new, compute the cost of allocating it in lamports
+-  rentExemptReserve) {
++    // If this stake account is new, compute the cost of allocating it in lamports
++    rentExemptReserve) {
+     const {
+       stakePubkey,
+       authorizedPubkey,
+@@ -9784,7 +9784,7 @@ class VoteInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a vote instruction and retrieve the instruction type.
+@@ -9956,7 +9956,7 @@ class VoteProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Vote program
+diff --git a/node_modules/@solana/web3.js/lib/index.cjs.js b/node_modules/@solana/web3.js/lib/index.cjs.js
+index 1117760..b0aa7a4 100644
+--- a/node_modules/@solana/web3.js/lib/index.cjs.js
++++ b/node_modules/@solana/web3.js/lib/index.cjs.js
+@@ -12,13 +12,13 @@ var require$$0 = require('util');
+ var require$$0$1 = require('http');
+ var require$$0$2 = require('https');
+ var superstruct = require('superstruct');
+-var RpcClient = require('jayson/lib/client/browser');
++var RpcClient = require('jayson/lib/client/browser/index.js');
+ var nodeFetch = require('node-fetch');
+ var rpcWebsockets = require('rpc-websockets');
+ var sha3 = require('@noble/hashes/sha3');
+ var secp256k1 = require('@noble/curves/secp256k1');
+ 
+-function _interopDefaultCompat (e) { return e && typeof e === 'object' && 'default' in e ? e : { default: e }; }
++function _interopDefaultCompat(e) { return e && typeof e === 'object' && 'default' in e ? e : { default: e }; }
+ 
+ function _interopNamespaceCompat(e) {
+   if (e && typeof e === 'object' && 'default' in e) return e;
+@@ -577,7 +577,7 @@ function getAlloc(type, fields) {
+ function decodeLength(bytes) {
+   let len = 0;
+   let size = 0;
+-  for (;;) {
++  for (; ;) {
+     let elem = bytes.shift();
+     len |= (elem & 0x7f) << size * 7;
+     size += 1;
+@@ -589,7 +589,7 @@ function decodeLength(bytes) {
+ }
+ function encodeLength(bytes, len) {
+   let rem_len = len;
+-  for (;;) {
++  for (; ;) {
+     let elem = rem_len & 0x7f;
+     rem_len >>= 7;
+     if (rem_len == 0) {
+@@ -602,7 +602,7 @@ function encodeLength(bytes, len) {
+   }
+ }
+ 
+-function assert (condition, message) {
++function assert(condition, message) {
+   if (!condition) {
+     throw new Error(message || 'Assertion failed');
+   }
+@@ -722,7 +722,7 @@ function guardedShift(byteArray) {
+ function guardedSplice(byteArray, ...args) {
+   const [start] = args;
+   if (args.length === 2 // Implies that `deleteCount` was supplied
+-  ? start + (args[1] ?? 0) > byteArray.length : start >= byteArray.length) {
++    ? start + (args[1] ?? 0) > byteArray.length : start >= byteArray.length) {
+     throw new Error(END_OF_BUFFER_ERROR_MESSAGE);
+   }
+   return byteArray.splice(...args);
+@@ -2016,8 +2016,8 @@ class TransactionMessage {
+           isWritable = keyIndex - numRequiredSignatures < numWritableUnsignedAccounts;
+         } else {
+           isWritable = keyIndex - accountKeys.staticAccountKeys.length <
+-          // accountKeysFromLookups cannot be undefined because we already found a pubkey for this index above
+-          accountKeys.accountKeysFromLookups.writable.length;
++            // accountKeysFromLookups cannot be undefined because we already found a pubkey for this index above
++            accountKeys.accountKeysFromLookups.writable.length;
+         }
+         keys.push({
+           pubkey,
+@@ -2491,7 +2491,7 @@ class SystemInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a system instruction and retrieve the instruction type.
+@@ -2814,7 +2814,7 @@ class SystemProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the System program
+@@ -3171,7 +3171,7 @@ class Loader {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Amount of program data placed in each load Transaction
+@@ -3185,11 +3185,11 @@ class Loader {
+    */
+   static getMinNumSignatures(dataLength) {
+     return 2 * (
+-    // Every transaction requires two signatures (payer + program)
+-    Math.ceil(dataLength / Loader.chunkSize) + 1 +
+-    // Add one for Create transaction
+-    1) // Add one for Finalize transaction
+-    ;
++      // Every transaction requires two signatures (payer + program)
++      Math.ceil(dataLength / Loader.chunkSize) + 1 +
++      // Add one for Create transaction
++      1) // Add one for Finalize transaction
++      ;
+   }
+ 
+   /**
+@@ -3388,11 +3388,11 @@ class BpfLoader {
+   }
+ }
+ 
+-function getDefaultExportFromCjs (x) {
+-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
++function getDefaultExportFromCjs(x) {
++  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+ }
+ 
+-var agentkeepalive = {exports: {}};
++var agentkeepalive = { exports: {} };
+ 
+ /**
+  * Helpers.
+@@ -3401,168 +3401,168 @@ var agentkeepalive = {exports: {}};
+ var ms;
+ var hasRequiredMs;
+ 
+-function requireMs () {
+-	if (hasRequiredMs) return ms;
+-	hasRequiredMs = 1;
+-	var s = 1000;
+-	var m = s * 60;
+-	var h = m * 60;
+-	var d = h * 24;
+-	var w = d * 7;
+-	var y = d * 365.25;
+-
+-	/**
+-	 * Parse or format the given `val`.
+-	 *
+-	 * Options:
+-	 *
+-	 *  - `long` verbose formatting [false]
+-	 *
+-	 * @param {String|Number} val
+-	 * @param {Object} [options]
+-	 * @throws {Error} throw an error if val is not a non-empty string or a number
+-	 * @return {String|Number}
+-	 * @api public
+-	 */
+-
+-	ms = function (val, options) {
+-	  options = options || {};
+-	  var type = typeof val;
+-	  if (type === 'string' && val.length > 0) {
+-	    return parse(val);
+-	  } else if (type === 'number' && isFinite(val)) {
+-	    return options.long ? fmtLong(val) : fmtShort(val);
+-	  }
+-	  throw new Error(
+-	    'val is not a non-empty string or a valid number. val=' +
+-	      JSON.stringify(val)
+-	  );
+-	};
+-
+-	/**
+-	 * Parse the given `str` and return milliseconds.
+-	 *
+-	 * @param {String} str
+-	 * @return {Number}
+-	 * @api private
+-	 */
+-
+-	function parse(str) {
+-	  str = String(str);
+-	  if (str.length > 100) {
+-	    return;
+-	  }
+-	  var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
+-	    str
+-	  );
+-	  if (!match) {
+-	    return;
+-	  }
+-	  var n = parseFloat(match[1]);
+-	  var type = (match[2] || 'ms').toLowerCase();
+-	  switch (type) {
+-	    case 'years':
+-	    case 'year':
+-	    case 'yrs':
+-	    case 'yr':
+-	    case 'y':
+-	      return n * y;
+-	    case 'weeks':
+-	    case 'week':
+-	    case 'w':
+-	      return n * w;
+-	    case 'days':
+-	    case 'day':
+-	    case 'd':
+-	      return n * d;
+-	    case 'hours':
+-	    case 'hour':
+-	    case 'hrs':
+-	    case 'hr':
+-	    case 'h':
+-	      return n * h;
+-	    case 'minutes':
+-	    case 'minute':
+-	    case 'mins':
+-	    case 'min':
+-	    case 'm':
+-	      return n * m;
+-	    case 'seconds':
+-	    case 'second':
+-	    case 'secs':
+-	    case 'sec':
+-	    case 's':
+-	      return n * s;
+-	    case 'milliseconds':
+-	    case 'millisecond':
+-	    case 'msecs':
+-	    case 'msec':
+-	    case 'ms':
+-	      return n;
+-	    default:
+-	      return undefined;
+-	  }
+-	}
+-
+-	/**
+-	 * Short format for `ms`.
+-	 *
+-	 * @param {Number} ms
+-	 * @return {String}
+-	 * @api private
+-	 */
+-
+-	function fmtShort(ms) {
+-	  var msAbs = Math.abs(ms);
+-	  if (msAbs >= d) {
+-	    return Math.round(ms / d) + 'd';
+-	  }
+-	  if (msAbs >= h) {
+-	    return Math.round(ms / h) + 'h';
+-	  }
+-	  if (msAbs >= m) {
+-	    return Math.round(ms / m) + 'm';
+-	  }
+-	  if (msAbs >= s) {
+-	    return Math.round(ms / s) + 's';
+-	  }
+-	  return ms + 'ms';
+-	}
+-
+-	/**
+-	 * Long format for `ms`.
+-	 *
+-	 * @param {Number} ms
+-	 * @return {String}
+-	 * @api private
+-	 */
+-
+-	function fmtLong(ms) {
+-	  var msAbs = Math.abs(ms);
+-	  if (msAbs >= d) {
+-	    return plural(ms, msAbs, d, 'day');
+-	  }
+-	  if (msAbs >= h) {
+-	    return plural(ms, msAbs, h, 'hour');
+-	  }
+-	  if (msAbs >= m) {
+-	    return plural(ms, msAbs, m, 'minute');
+-	  }
+-	  if (msAbs >= s) {
+-	    return plural(ms, msAbs, s, 'second');
+-	  }
+-	  return ms + ' ms';
+-	}
+-
+-	/**
+-	 * Pluralization helper.
+-	 */
+-
+-	function plural(ms, msAbs, n, name) {
+-	  var isPlural = msAbs >= n * 1.5;
+-	  return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
+-	}
+-	return ms;
++function requireMs() {
++  if (hasRequiredMs) return ms;
++  hasRequiredMs = 1;
++  var s = 1000;
++  var m = s * 60;
++  var h = m * 60;
++  var d = h * 24;
++  var w = d * 7;
++  var y = d * 365.25;
++
++  /**
++   * Parse or format the given `val`.
++   *
++   * Options:
++   *
++   *  - `long` verbose formatting [false]
++   *
++   * @param {String|Number} val
++   * @param {Object} [options]
++   * @throws {Error} throw an error if val is not a non-empty string or a number
++   * @return {String|Number}
++   * @api public
++   */
++
++  ms = function (val, options) {
++    options = options || {};
++    var type = typeof val;
++    if (type === 'string' && val.length > 0) {
++      return parse(val);
++    } else if (type === 'number' && isFinite(val)) {
++      return options.long ? fmtLong(val) : fmtShort(val);
++    }
++    throw new Error(
++      'val is not a non-empty string or a valid number. val=' +
++      JSON.stringify(val)
++    );
++  };
++
++  /**
++   * Parse the given `str` and return milliseconds.
++   *
++   * @param {String} str
++   * @return {Number}
++   * @api private
++   */
++
++  function parse(str) {
++    str = String(str);
++    if (str.length > 100) {
++      return;
++    }
++    var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
++      str
++    );
++    if (!match) {
++      return;
++    }
++    var n = parseFloat(match[1]);
++    var type = (match[2] || 'ms').toLowerCase();
++    switch (type) {
++      case 'years':
++      case 'year':
++      case 'yrs':
++      case 'yr':
++      case 'y':
++        return n * y;
++      case 'weeks':
++      case 'week':
++      case 'w':
++        return n * w;
++      case 'days':
++      case 'day':
++      case 'd':
++        return n * d;
++      case 'hours':
++      case 'hour':
++      case 'hrs':
++      case 'hr':
++      case 'h':
++        return n * h;
++      case 'minutes':
++      case 'minute':
++      case 'mins':
++      case 'min':
++      case 'm':
++        return n * m;
++      case 'seconds':
++      case 'second':
++      case 'secs':
++      case 'sec':
++      case 's':
++        return n * s;
++      case 'milliseconds':
++      case 'millisecond':
++      case 'msecs':
++      case 'msec':
++      case 'ms':
++        return n;
++      default:
++        return undefined;
++    }
++  }
++
++  /**
++   * Short format for `ms`.
++   *
++   * @param {Number} ms
++   * @return {String}
++   * @api private
++   */
++
++  function fmtShort(ms) {
++    var msAbs = Math.abs(ms);
++    if (msAbs >= d) {
++      return Math.round(ms / d) + 'd';
++    }
++    if (msAbs >= h) {
++      return Math.round(ms / h) + 'h';
++    }
++    if (msAbs >= m) {
++      return Math.round(ms / m) + 'm';
++    }
++    if (msAbs >= s) {
++      return Math.round(ms / s) + 's';
++    }
++    return ms + 'ms';
++  }
++
++  /**
++   * Long format for `ms`.
++   *
++   * @param {Number} ms
++   * @return {String}
++   * @api private
++   */
++
++  function fmtLong(ms) {
++    var msAbs = Math.abs(ms);
++    if (msAbs >= d) {
++      return plural(ms, msAbs, d, 'day');
++    }
++    if (msAbs >= h) {
++      return plural(ms, msAbs, h, 'hour');
++    }
++    if (msAbs >= m) {
++      return plural(ms, msAbs, m, 'minute');
++    }
++    if (msAbs >= s) {
++      return plural(ms, msAbs, s, 'second');
++    }
++    return ms + ' ms';
++  }
++
++  /**
++   * Pluralization helper.
++   */
++
++  function plural(ms, msAbs, n, name) {
++    var isPlural = msAbs >= n * 1.5;
++    return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
++  }
++  return ms;
+ }
+ 
+ /*!
+@@ -3574,530 +3574,530 @@ function requireMs () {
+ var humanizeMs;
+ var hasRequiredHumanizeMs;
+ 
+-function requireHumanizeMs () {
+-	if (hasRequiredHumanizeMs) return humanizeMs;
+-	hasRequiredHumanizeMs = 1;
+-
+-	/**
+-	 * Module dependencies.
+-	 */
+-
+-	var util = require$$0__default.default;
+-	var ms = /*@__PURE__*/ requireMs();
+-
+-	humanizeMs = function (t) {
+-	  if (typeof t === 'number') return t;
+-	  var r = ms(t);
+-	  if (r === undefined) {
+-	    var err = new Error(util.format('humanize-ms(%j) result undefined', t));
+-	    console.warn(err.stack);
+-	  }
+-	  return r;
+-	};
+-	return humanizeMs;
++function requireHumanizeMs() {
++  if (hasRequiredHumanizeMs) return humanizeMs;
++  hasRequiredHumanizeMs = 1;
++
++  /**
++   * Module dependencies.
++   */
++
++  var util = require$$0__default.default;
++  var ms = /*@__PURE__*/ requireMs();
++
++  humanizeMs = function (t) {
++    if (typeof t === 'number') return t;
++    var r = ms(t);
++    if (r === undefined) {
++      var err = new Error(util.format('humanize-ms(%j) result undefined', t));
++      console.warn(err.stack);
++    }
++    return r;
++  };
++  return humanizeMs;
+ }
+ 
+ var constants;
+ var hasRequiredConstants;
+ 
+-function requireConstants () {
+-	if (hasRequiredConstants) return constants;
+-	hasRequiredConstants = 1;
+-
+-	constants = {
+-	  // agent
+-	  CURRENT_ID: Symbol('agentkeepalive#currentId'),
+-	  CREATE_ID: Symbol('agentkeepalive#createId'),
+-	  INIT_SOCKET: Symbol('agentkeepalive#initSocket'),
+-	  CREATE_HTTPS_CONNECTION: Symbol('agentkeepalive#createHttpsConnection'),
+-	  // socket
+-	  SOCKET_CREATED_TIME: Symbol('agentkeepalive#socketCreatedTime'),
+-	  SOCKET_NAME: Symbol('agentkeepalive#socketName'),
+-	  SOCKET_REQUEST_COUNT: Symbol('agentkeepalive#socketRequestCount'),
+-	  SOCKET_REQUEST_FINISHED_COUNT: Symbol('agentkeepalive#socketRequestFinishedCount'),
+-	};
+-	return constants;
++function requireConstants() {
++  if (hasRequiredConstants) return constants;
++  hasRequiredConstants = 1;
++
++  constants = {
++    // agent
++    CURRENT_ID: Symbol('agentkeepalive#currentId'),
++    CREATE_ID: Symbol('agentkeepalive#createId'),
++    INIT_SOCKET: Symbol('agentkeepalive#initSocket'),
++    CREATE_HTTPS_CONNECTION: Symbol('agentkeepalive#createHttpsConnection'),
++    // socket
++    SOCKET_CREATED_TIME: Symbol('agentkeepalive#socketCreatedTime'),
++    SOCKET_NAME: Symbol('agentkeepalive#socketName'),
++    SOCKET_REQUEST_COUNT: Symbol('agentkeepalive#socketRequestCount'),
++    SOCKET_REQUEST_FINISHED_COUNT: Symbol('agentkeepalive#socketRequestFinishedCount'),
++  };
++  return constants;
+ }
+ 
+ var agent;
+ var hasRequiredAgent;
+ 
+-function requireAgent () {
+-	if (hasRequiredAgent) return agent;
+-	hasRequiredAgent = 1;
+-
+-	const OriginalAgent = require$$0__default$1.default.Agent;
+-	const ms = /*@__PURE__*/ requireHumanizeMs();
+-	const debug = require$$0__default.default.debuglog('agentkeepalive');
+-	const {
+-	  INIT_SOCKET,
+-	  CURRENT_ID,
+-	  CREATE_ID,
+-	  SOCKET_CREATED_TIME,
+-	  SOCKET_NAME,
+-	  SOCKET_REQUEST_COUNT,
+-	  SOCKET_REQUEST_FINISHED_COUNT,
+-	} = /*@__PURE__*/ requireConstants();
+-
+-	// OriginalAgent come from
+-	// - https://github.com/nodejs/node/blob/v8.12.0/lib/_http_agent.js
+-	// - https://github.com/nodejs/node/blob/v10.12.0/lib/_http_agent.js
+-
+-	// node <= 10
+-	let defaultTimeoutListenerCount = 1;
+-	const majorVersion = parseInt(process.version.split('.', 1)[0].substring(1));
+-	if (majorVersion >= 11 && majorVersion <= 12) {
+-	  defaultTimeoutListenerCount = 2;
+-	} else if (majorVersion >= 13) {
+-	  defaultTimeoutListenerCount = 3;
+-	}
+-
+-	function deprecate(message) {
+-	  console.log('[agentkeepalive:deprecated] %s', message);
+-	}
+-
+-	class Agent extends OriginalAgent {
+-	  constructor(options) {
+-	    options = options || {};
+-	    options.keepAlive = options.keepAlive !== false;
+-	    // default is keep-alive and 4s free socket timeout
+-	    // see https://medium.com/ssense-tech/reduce-networking-errors-in-nodejs-23b4eb9f2d83
+-	    if (options.freeSocketTimeout === undefined) {
+-	      options.freeSocketTimeout = 4000;
+-	    }
+-	    // Legacy API: keepAliveTimeout should be rename to `freeSocketTimeout`
+-	    if (options.keepAliveTimeout) {
+-	      deprecate('options.keepAliveTimeout is deprecated, please use options.freeSocketTimeout instead');
+-	      options.freeSocketTimeout = options.keepAliveTimeout;
+-	      delete options.keepAliveTimeout;
+-	    }
+-	    // Legacy API: freeSocketKeepAliveTimeout should be rename to `freeSocketTimeout`
+-	    if (options.freeSocketKeepAliveTimeout) {
+-	      deprecate('options.freeSocketKeepAliveTimeout is deprecated, please use options.freeSocketTimeout instead');
+-	      options.freeSocketTimeout = options.freeSocketKeepAliveTimeout;
+-	      delete options.freeSocketKeepAliveTimeout;
+-	    }
+-
+-	    // Sets the socket to timeout after timeout milliseconds of inactivity on the socket.
+-	    // By default is double free socket timeout.
+-	    if (options.timeout === undefined) {
+-	      // make sure socket default inactivity timeout >= 8s
+-	      options.timeout = Math.max(options.freeSocketTimeout * 2, 8000);
+-	    }
+-
+-	    // support humanize format
+-	    options.timeout = ms(options.timeout);
+-	    options.freeSocketTimeout = ms(options.freeSocketTimeout);
+-	    options.socketActiveTTL = options.socketActiveTTL ? ms(options.socketActiveTTL) : 0;
+-
+-	    super(options);
+-
+-	    this[CURRENT_ID] = 0;
+-
+-	    // create socket success counter
+-	    this.createSocketCount = 0;
+-	    this.createSocketCountLastCheck = 0;
+-
+-	    this.createSocketErrorCount = 0;
+-	    this.createSocketErrorCountLastCheck = 0;
+-
+-	    this.closeSocketCount = 0;
+-	    this.closeSocketCountLastCheck = 0;
+-
+-	    // socket error event count
+-	    this.errorSocketCount = 0;
+-	    this.errorSocketCountLastCheck = 0;
+-
+-	    // request finished counter
+-	    this.requestCount = 0;
+-	    this.requestCountLastCheck = 0;
+-
+-	    // including free socket timeout counter
+-	    this.timeoutSocketCount = 0;
+-	    this.timeoutSocketCountLastCheck = 0;
+-
+-	    this.on('free', socket => {
+-	      // https://github.com/nodejs/node/pull/32000
+-	      // Node.js native agent will check socket timeout eqs agent.options.timeout.
+-	      // Use the ttl or freeSocketTimeout to overwrite.
+-	      const timeout = this.calcSocketTimeout(socket);
+-	      if (timeout > 0 && socket.timeout !== timeout) {
+-	        socket.setTimeout(timeout);
+-	      }
+-	    });
+-	  }
+-
+-	  get freeSocketKeepAliveTimeout() {
+-	    deprecate('agent.freeSocketKeepAliveTimeout is deprecated, please use agent.options.freeSocketTimeout instead');
+-	    return this.options.freeSocketTimeout;
+-	  }
+-
+-	  get timeout() {
+-	    deprecate('agent.timeout is deprecated, please use agent.options.timeout instead');
+-	    return this.options.timeout;
+-	  }
+-
+-	  get socketActiveTTL() {
+-	    deprecate('agent.socketActiveTTL is deprecated, please use agent.options.socketActiveTTL instead');
+-	    return this.options.socketActiveTTL;
+-	  }
+-
+-	  calcSocketTimeout(socket) {
+-	    /**
+-	     * return <= 0: should free socket
+-	     * return > 0: should update socket timeout
+-	     * return undefined: not find custom timeout
+-	     */
+-	    let freeSocketTimeout = this.options.freeSocketTimeout;
+-	    const socketActiveTTL = this.options.socketActiveTTL;
+-	    if (socketActiveTTL) {
+-	      // check socketActiveTTL
+-	      const aliveTime = Date.now() - socket[SOCKET_CREATED_TIME];
+-	      const diff = socketActiveTTL - aliveTime;
+-	      if (diff <= 0) {
+-	        return diff;
+-	      }
+-	      if (freeSocketTimeout && diff < freeSocketTimeout) {
+-	        freeSocketTimeout = diff;
+-	      }
+-	    }
+-	    // set freeSocketTimeout
+-	    if (freeSocketTimeout) {
+-	      // set free keepalive timer
+-	      // try to use socket custom freeSocketTimeout first, support headers['keep-alive']
+-	      // https://github.com/node-modules/urllib/blob/b76053020923f4d99a1c93cf2e16e0c5ba10bacf/lib/urllib.js#L498
+-	      const customFreeSocketTimeout = socket.freeSocketTimeout || socket.freeSocketKeepAliveTimeout;
+-	      return customFreeSocketTimeout || freeSocketTimeout;
+-	    }
+-	  }
+-
+-	  keepSocketAlive(socket) {
+-	    const result = super.keepSocketAlive(socket);
+-	    // should not keepAlive, do nothing
+-	    if (!result) return result;
+-
+-	    const customTimeout = this.calcSocketTimeout(socket);
+-	    if (typeof customTimeout === 'undefined') {
+-	      return true;
+-	    }
+-	    if (customTimeout <= 0) {
+-	      debug('%s(requests: %s, finished: %s) free but need to destroy by TTL, request count %s, diff is %s',
+-	        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT], customTimeout);
+-	      return false;
+-	    }
+-	    if (socket.timeout !== customTimeout) {
+-	      socket.setTimeout(customTimeout);
+-	    }
+-	    return true;
+-	  }
+-
+-	  // only call on addRequest
+-	  reuseSocket(...args) {
+-	    // reuseSocket(socket, req)
+-	    super.reuseSocket(...args);
+-	    const socket = args[0];
+-	    const req = args[1];
+-	    req.reusedSocket = true;
+-	    const agentTimeout = this.options.timeout;
+-	    if (getSocketTimeout(socket) !== agentTimeout) {
+-	      // reset timeout before use
+-	      socket.setTimeout(agentTimeout);
+-	      debug('%s reset timeout to %sms', socket[SOCKET_NAME], agentTimeout);
+-	    }
+-	    socket[SOCKET_REQUEST_COUNT]++;
+-	    debug('%s(requests: %s, finished: %s) reuse on addRequest, timeout %sms',
+-	      socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
+-	      getSocketTimeout(socket));
+-	  }
+-
+-	  [CREATE_ID]() {
+-	    const id = this[CURRENT_ID]++;
+-	    if (this[CURRENT_ID] === Number.MAX_SAFE_INTEGER) this[CURRENT_ID] = 0;
+-	    return id;
+-	  }
+-
+-	  [INIT_SOCKET](socket, options) {
+-	    // bugfix here.
+-	    // https on node 8, 10 won't set agent.options.timeout by default
+-	    // TODO: need to fix on node itself
+-	    if (options.timeout) {
+-	      const timeout = getSocketTimeout(socket);
+-	      if (!timeout) {
+-	        socket.setTimeout(options.timeout);
+-	      }
+-	    }
+-
+-	    if (this.options.keepAlive) {
+-	      // Disable Nagle's algorithm: http://blog.caustik.com/2012/04/08/scaling-node-js-to-100k-concurrent-connections/
+-	      // https://fengmk2.com/benchmark/nagle-algorithm-delayed-ack-mock.html
+-	      socket.setNoDelay(true);
+-	    }
+-	    this.createSocketCount++;
+-	    if (this.options.socketActiveTTL) {
+-	      socket[SOCKET_CREATED_TIME] = Date.now();
+-	    }
+-	    // don't show the hole '-----BEGIN CERTIFICATE----' key string
+-	    socket[SOCKET_NAME] = `sock[${this[CREATE_ID]()}#${options._agentKey}]`.split('-----BEGIN', 1)[0];
+-	    socket[SOCKET_REQUEST_COUNT] = 1;
+-	    socket[SOCKET_REQUEST_FINISHED_COUNT] = 0;
+-	    installListeners(this, socket, options);
+-	  }
+-
+-	  createConnection(options, oncreate) {
+-	    let called = false;
+-	    const onNewCreate = (err, socket) => {
+-	      if (called) return;
+-	      called = true;
+-
+-	      if (err) {
+-	        this.createSocketErrorCount++;
+-	        return oncreate(err);
+-	      }
+-	      this[INIT_SOCKET](socket, options);
+-	      oncreate(err, socket);
+-	    };
+-
+-	    const newSocket = super.createConnection(options, onNewCreate);
+-	    if (newSocket) onNewCreate(null, newSocket);
+-	    return newSocket;
+-	  }
+-
+-	  get statusChanged() {
+-	    const changed = this.createSocketCount !== this.createSocketCountLastCheck ||
+-	      this.createSocketErrorCount !== this.createSocketErrorCountLastCheck ||
+-	      this.closeSocketCount !== this.closeSocketCountLastCheck ||
+-	      this.errorSocketCount !== this.errorSocketCountLastCheck ||
+-	      this.timeoutSocketCount !== this.timeoutSocketCountLastCheck ||
+-	      this.requestCount !== this.requestCountLastCheck;
+-	    if (changed) {
+-	      this.createSocketCountLastCheck = this.createSocketCount;
+-	      this.createSocketErrorCountLastCheck = this.createSocketErrorCount;
+-	      this.closeSocketCountLastCheck = this.closeSocketCount;
+-	      this.errorSocketCountLastCheck = this.errorSocketCount;
+-	      this.timeoutSocketCountLastCheck = this.timeoutSocketCount;
+-	      this.requestCountLastCheck = this.requestCount;
+-	    }
+-	    return changed;
+-	  }
+-
+-	  getCurrentStatus() {
+-	    return {
+-	      createSocketCount: this.createSocketCount,
+-	      createSocketErrorCount: this.createSocketErrorCount,
+-	      closeSocketCount: this.closeSocketCount,
+-	      errorSocketCount: this.errorSocketCount,
+-	      timeoutSocketCount: this.timeoutSocketCount,
+-	      requestCount: this.requestCount,
+-	      freeSockets: inspect(this.freeSockets),
+-	      sockets: inspect(this.sockets),
+-	      requests: inspect(this.requests),
+-	    };
+-	  }
+-	}
+-
+-	// node 8 don't has timeout attribute on socket
+-	// https://github.com/nodejs/node/pull/21204/files#diff-e6ef024c3775d787c38487a6309e491dR408
+-	function getSocketTimeout(socket) {
+-	  return socket.timeout || socket._idleTimeout;
+-	}
+-
+-	function installListeners(agent, socket, options) {
+-	  debug('%s create, timeout %sms', socket[SOCKET_NAME], getSocketTimeout(socket));
+-
+-	  // listener socket events: close, timeout, error, free
+-	  function onFree() {
+-	    // create and socket.emit('free') logic
+-	    // https://github.com/nodejs/node/blob/master/lib/_http_agent.js#L311
+-	    // no req on the socket, it should be the new socket
+-	    if (!socket._httpMessage && socket[SOCKET_REQUEST_COUNT] === 1) return;
+-
+-	    socket[SOCKET_REQUEST_FINISHED_COUNT]++;
+-	    agent.requestCount++;
+-	    debug('%s(requests: %s, finished: %s) free',
+-	      socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
+-
+-	    // should reuse on pedding requests?
+-	    const name = agent.getName(options);
+-	    if (socket.writable && agent.requests[name] && agent.requests[name].length) {
+-	      // will be reuse on agent free listener
+-	      socket[SOCKET_REQUEST_COUNT]++;
+-	      debug('%s(requests: %s, finished: %s) will be reuse on agent free event',
+-	        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
+-	    }
+-	  }
+-	  socket.on('free', onFree);
+-
+-	  function onClose(isError) {
+-	    debug('%s(requests: %s, finished: %s) close, isError: %s',
+-	      socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT], isError);
+-	    agent.closeSocketCount++;
+-	  }
+-	  socket.on('close', onClose);
+-
+-	  // start socket timeout handler
+-	  function onTimeout() {
+-	    // onTimeout and emitRequestTimeout(_http_client.js)
+-	    // https://github.com/nodejs/node/blob/v12.x/lib/_http_client.js#L711
+-	    const listenerCount = socket.listeners('timeout').length;
+-	    // node <= 10, default listenerCount is 1, onTimeout
+-	    // 11 < node <= 12, default listenerCount is 2, onTimeout and emitRequestTimeout
+-	    // node >= 13, default listenerCount is 3, onTimeout,
+-	    //   onTimeout(https://github.com/nodejs/node/pull/32000/files#diff-5f7fb0850412c6be189faeddea6c5359R333)
+-	    //   and emitRequestTimeout
+-	    const timeout = getSocketTimeout(socket);
+-	    const req = socket._httpMessage;
+-	    const reqTimeoutListenerCount = req && req.listeners('timeout').length || 0;
+-	    debug('%s(requests: %s, finished: %s) timeout after %sms, listeners %s, defaultTimeoutListenerCount %s, hasHttpRequest %s, HttpRequest timeoutListenerCount %s',
+-	      socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
+-	      timeout, listenerCount, defaultTimeoutListenerCount, !!req, reqTimeoutListenerCount);
+-	    if (debug.enabled) {
+-	      debug('timeout listeners: %s', socket.listeners('timeout').map(f => f.name).join(', '));
+-	    }
+-	    agent.timeoutSocketCount++;
+-	    const name = agent.getName(options);
+-	    if (agent.freeSockets[name] && agent.freeSockets[name].indexOf(socket) !== -1) {
+-	      // free socket timeout, destroy quietly
+-	      socket.destroy();
+-	      // Remove it from freeSockets list immediately to prevent new requests
+-	      // from being sent through this socket.
+-	      agent.removeSocket(socket, options);
+-	      debug('%s is free, destroy quietly', socket[SOCKET_NAME]);
+-	    } else {
+-	      // if there is no any request socket timeout handler,
+-	      // agent need to handle socket timeout itself.
+-	      //
+-	      // custom request socket timeout handle logic must follow these rules:
+-	      //  1. Destroy socket first
+-	      //  2. Must emit socket 'agentRemove' event tell agent remove socket
+-	      //     from freeSockets list immediately.
+-	      //     Otherise you may be get 'socket hang up' error when reuse
+-	      //     free socket and timeout happen in the same time.
+-	      if (reqTimeoutListenerCount === 0) {
+-	        const error = new Error('Socket timeout');
+-	        error.code = 'ERR_SOCKET_TIMEOUT';
+-	        error.timeout = timeout;
+-	        // must manually call socket.end() or socket.destroy() to end the connection.
+-	        // https://nodejs.org/dist/latest-v10.x/docs/api/net.html#net_socket_settimeout_timeout_callback
+-	        socket.destroy(error);
+-	        agent.removeSocket(socket, options);
+-	        debug('%s destroy with timeout error', socket[SOCKET_NAME]);
+-	      }
+-	    }
+-	  }
+-	  socket.on('timeout', onTimeout);
+-
+-	  function onError(err) {
+-	    const listenerCount = socket.listeners('error').length;
+-	    debug('%s(requests: %s, finished: %s) error: %s, listenerCount: %s',
+-	      socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
+-	      err, listenerCount);
+-	    agent.errorSocketCount++;
+-	    if (listenerCount === 1) {
+-	      // if socket don't contain error event handler, don't catch it, emit it again
+-	      debug('%s emit uncaught error event', socket[SOCKET_NAME]);
+-	      socket.removeListener('error', onError);
+-	      socket.emit('error', err);
+-	    }
+-	  }
+-	  socket.on('error', onError);
+-
+-	  function onRemove() {
+-	    debug('%s(requests: %s, finished: %s) agentRemove',
+-	      socket[SOCKET_NAME],
+-	      socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
+-	    // We need this function for cases like HTTP 'upgrade'
+-	    // (defined by WebSockets) where we need to remove a socket from the
+-	    // pool because it'll be locked up indefinitely
+-	    socket.removeListener('close', onClose);
+-	    socket.removeListener('error', onError);
+-	    socket.removeListener('free', onFree);
+-	    socket.removeListener('timeout', onTimeout);
+-	    socket.removeListener('agentRemove', onRemove);
+-	  }
+-	  socket.on('agentRemove', onRemove);
+-	}
+-
+-	agent = Agent;
+-
+-	function inspect(obj) {
+-	  const res = {};
+-	  for (const key in obj) {
+-	    res[key] = obj[key].length;
+-	  }
+-	  return res;
+-	}
+-	return agent;
++function requireAgent() {
++  if (hasRequiredAgent) return agent;
++  hasRequiredAgent = 1;
++
++  const OriginalAgent = require$$0__default$1.default.Agent;
++  const ms = /*@__PURE__*/ requireHumanizeMs();
++  const debug = require$$0__default.default.debuglog('agentkeepalive');
++  const {
++    INIT_SOCKET,
++    CURRENT_ID,
++    CREATE_ID,
++    SOCKET_CREATED_TIME,
++    SOCKET_NAME,
++    SOCKET_REQUEST_COUNT,
++    SOCKET_REQUEST_FINISHED_COUNT,
++  } = /*@__PURE__*/ requireConstants();
++
++  // OriginalAgent come from
++  // - https://github.com/nodejs/node/blob/v8.12.0/lib/_http_agent.js
++  // - https://github.com/nodejs/node/blob/v10.12.0/lib/_http_agent.js
++
++  // node <= 10
++  let defaultTimeoutListenerCount = 1;
++  const majorVersion = parseInt(process.version.split('.', 1)[0].substring(1));
++  if (majorVersion >= 11 && majorVersion <= 12) {
++    defaultTimeoutListenerCount = 2;
++  } else if (majorVersion >= 13) {
++    defaultTimeoutListenerCount = 3;
++  }
++
++  function deprecate(message) {
++    console.log('[agentkeepalive:deprecated] %s', message);
++  }
++
++  class Agent extends OriginalAgent {
++    constructor(options) {
++      options = options || {};
++      options.keepAlive = options.keepAlive !== false;
++      // default is keep-alive and 4s free socket timeout
++      // see https://medium.com/ssense-tech/reduce-networking-errors-in-nodejs-23b4eb9f2d83
++      if (options.freeSocketTimeout === undefined) {
++        options.freeSocketTimeout = 4000;
++      }
++      // Legacy API: keepAliveTimeout should be rename to `freeSocketTimeout`
++      if (options.keepAliveTimeout) {
++        deprecate('options.keepAliveTimeout is deprecated, please use options.freeSocketTimeout instead');
++        options.freeSocketTimeout = options.keepAliveTimeout;
++        delete options.keepAliveTimeout;
++      }
++      // Legacy API: freeSocketKeepAliveTimeout should be rename to `freeSocketTimeout`
++      if (options.freeSocketKeepAliveTimeout) {
++        deprecate('options.freeSocketKeepAliveTimeout is deprecated, please use options.freeSocketTimeout instead');
++        options.freeSocketTimeout = options.freeSocketKeepAliveTimeout;
++        delete options.freeSocketKeepAliveTimeout;
++      }
++
++      // Sets the socket to timeout after timeout milliseconds of inactivity on the socket.
++      // By default is double free socket timeout.
++      if (options.timeout === undefined) {
++        // make sure socket default inactivity timeout >= 8s
++        options.timeout = Math.max(options.freeSocketTimeout * 2, 8000);
++      }
++
++      // support humanize format
++      options.timeout = ms(options.timeout);
++      options.freeSocketTimeout = ms(options.freeSocketTimeout);
++      options.socketActiveTTL = options.socketActiveTTL ? ms(options.socketActiveTTL) : 0;
++
++      super(options);
++
++      this[CURRENT_ID] = 0;
++
++      // create socket success counter
++      this.createSocketCount = 0;
++      this.createSocketCountLastCheck = 0;
++
++      this.createSocketErrorCount = 0;
++      this.createSocketErrorCountLastCheck = 0;
++
++      this.closeSocketCount = 0;
++      this.closeSocketCountLastCheck = 0;
++
++      // socket error event count
++      this.errorSocketCount = 0;
++      this.errorSocketCountLastCheck = 0;
++
++      // request finished counter
++      this.requestCount = 0;
++      this.requestCountLastCheck = 0;
++
++      // including free socket timeout counter
++      this.timeoutSocketCount = 0;
++      this.timeoutSocketCountLastCheck = 0;
++
++      this.on('free', socket => {
++        // https://github.com/nodejs/node/pull/32000
++        // Node.js native agent will check socket timeout eqs agent.options.timeout.
++        // Use the ttl or freeSocketTimeout to overwrite.
++        const timeout = this.calcSocketTimeout(socket);
++        if (timeout > 0 && socket.timeout !== timeout) {
++          socket.setTimeout(timeout);
++        }
++      });
++    }
++
++    get freeSocketKeepAliveTimeout() {
++      deprecate('agent.freeSocketKeepAliveTimeout is deprecated, please use agent.options.freeSocketTimeout instead');
++      return this.options.freeSocketTimeout;
++    }
++
++    get timeout() {
++      deprecate('agent.timeout is deprecated, please use agent.options.timeout instead');
++      return this.options.timeout;
++    }
++
++    get socketActiveTTL() {
++      deprecate('agent.socketActiveTTL is deprecated, please use agent.options.socketActiveTTL instead');
++      return this.options.socketActiveTTL;
++    }
++
++    calcSocketTimeout(socket) {
++      /**
++       * return <= 0: should free socket
++       * return > 0: should update socket timeout
++       * return undefined: not find custom timeout
++       */
++      let freeSocketTimeout = this.options.freeSocketTimeout;
++      const socketActiveTTL = this.options.socketActiveTTL;
++      if (socketActiveTTL) {
++        // check socketActiveTTL
++        const aliveTime = Date.now() - socket[SOCKET_CREATED_TIME];
++        const diff = socketActiveTTL - aliveTime;
++        if (diff <= 0) {
++          return diff;
++        }
++        if (freeSocketTimeout && diff < freeSocketTimeout) {
++          freeSocketTimeout = diff;
++        }
++      }
++      // set freeSocketTimeout
++      if (freeSocketTimeout) {
++        // set free keepalive timer
++        // try to use socket custom freeSocketTimeout first, support headers['keep-alive']
++        // https://github.com/node-modules/urllib/blob/b76053020923f4d99a1c93cf2e16e0c5ba10bacf/lib/urllib.js#L498
++        const customFreeSocketTimeout = socket.freeSocketTimeout || socket.freeSocketKeepAliveTimeout;
++        return customFreeSocketTimeout || freeSocketTimeout;
++      }
++    }
++
++    keepSocketAlive(socket) {
++      const result = super.keepSocketAlive(socket);
++      // should not keepAlive, do nothing
++      if (!result) return result;
++
++      const customTimeout = this.calcSocketTimeout(socket);
++      if (typeof customTimeout === 'undefined') {
++        return true;
++      }
++      if (customTimeout <= 0) {
++        debug('%s(requests: %s, finished: %s) free but need to destroy by TTL, request count %s, diff is %s',
++          socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT], customTimeout);
++        return false;
++      }
++      if (socket.timeout !== customTimeout) {
++        socket.setTimeout(customTimeout);
++      }
++      return true;
++    }
++
++    // only call on addRequest
++    reuseSocket(...args) {
++      // reuseSocket(socket, req)
++      super.reuseSocket(...args);
++      const socket = args[0];
++      const req = args[1];
++      req.reusedSocket = true;
++      const agentTimeout = this.options.timeout;
++      if (getSocketTimeout(socket) !== agentTimeout) {
++        // reset timeout before use
++        socket.setTimeout(agentTimeout);
++        debug('%s reset timeout to %sms', socket[SOCKET_NAME], agentTimeout);
++      }
++      socket[SOCKET_REQUEST_COUNT]++;
++      debug('%s(requests: %s, finished: %s) reuse on addRequest, timeout %sms',
++        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
++        getSocketTimeout(socket));
++    }
++
++    [CREATE_ID]() {
++      const id = this[CURRENT_ID]++;
++      if (this[CURRENT_ID] === Number.MAX_SAFE_INTEGER) this[CURRENT_ID] = 0;
++      return id;
++    }
++
++    [INIT_SOCKET](socket, options) {
++      // bugfix here.
++      // https on node 8, 10 won't set agent.options.timeout by default
++      // TODO: need to fix on node itself
++      if (options.timeout) {
++        const timeout = getSocketTimeout(socket);
++        if (!timeout) {
++          socket.setTimeout(options.timeout);
++        }
++      }
++
++      if (this.options.keepAlive) {
++        // Disable Nagle's algorithm: http://blog.caustik.com/2012/04/08/scaling-node-js-to-100k-concurrent-connections/
++        // https://fengmk2.com/benchmark/nagle-algorithm-delayed-ack-mock.html
++        socket.setNoDelay(true);
++      }
++      this.createSocketCount++;
++      if (this.options.socketActiveTTL) {
++        socket[SOCKET_CREATED_TIME] = Date.now();
++      }
++      // don't show the hole '-----BEGIN CERTIFICATE----' key string
++      socket[SOCKET_NAME] = `sock[${this[CREATE_ID]()}#${options._agentKey}]`.split('-----BEGIN', 1)[0];
++      socket[SOCKET_REQUEST_COUNT] = 1;
++      socket[SOCKET_REQUEST_FINISHED_COUNT] = 0;
++      installListeners(this, socket, options);
++    }
++
++    createConnection(options, oncreate) {
++      let called = false;
++      const onNewCreate = (err, socket) => {
++        if (called) return;
++        called = true;
++
++        if (err) {
++          this.createSocketErrorCount++;
++          return oncreate(err);
++        }
++        this[INIT_SOCKET](socket, options);
++        oncreate(err, socket);
++      };
++
++      const newSocket = super.createConnection(options, onNewCreate);
++      if (newSocket) onNewCreate(null, newSocket);
++      return newSocket;
++    }
++
++    get statusChanged() {
++      const changed = this.createSocketCount !== this.createSocketCountLastCheck ||
++        this.createSocketErrorCount !== this.createSocketErrorCountLastCheck ||
++        this.closeSocketCount !== this.closeSocketCountLastCheck ||
++        this.errorSocketCount !== this.errorSocketCountLastCheck ||
++        this.timeoutSocketCount !== this.timeoutSocketCountLastCheck ||
++        this.requestCount !== this.requestCountLastCheck;
++      if (changed) {
++        this.createSocketCountLastCheck = this.createSocketCount;
++        this.createSocketErrorCountLastCheck = this.createSocketErrorCount;
++        this.closeSocketCountLastCheck = this.closeSocketCount;
++        this.errorSocketCountLastCheck = this.errorSocketCount;
++        this.timeoutSocketCountLastCheck = this.timeoutSocketCount;
++        this.requestCountLastCheck = this.requestCount;
++      }
++      return changed;
++    }
++
++    getCurrentStatus() {
++      return {
++        createSocketCount: this.createSocketCount,
++        createSocketErrorCount: this.createSocketErrorCount,
++        closeSocketCount: this.closeSocketCount,
++        errorSocketCount: this.errorSocketCount,
++        timeoutSocketCount: this.timeoutSocketCount,
++        requestCount: this.requestCount,
++        freeSockets: inspect(this.freeSockets),
++        sockets: inspect(this.sockets),
++        requests: inspect(this.requests),
++      };
++    }
++  }
++
++  // node 8 don't has timeout attribute on socket
++  // https://github.com/nodejs/node/pull/21204/files#diff-e6ef024c3775d787c38487a6309e491dR408
++  function getSocketTimeout(socket) {
++    return socket.timeout || socket._idleTimeout;
++  }
++
++  function installListeners(agent, socket, options) {
++    debug('%s create, timeout %sms', socket[SOCKET_NAME], getSocketTimeout(socket));
++
++    // listener socket events: close, timeout, error, free
++    function onFree() {
++      // create and socket.emit('free') logic
++      // https://github.com/nodejs/node/blob/master/lib/_http_agent.js#L311
++      // no req on the socket, it should be the new socket
++      if (!socket._httpMessage && socket[SOCKET_REQUEST_COUNT] === 1) return;
++
++      socket[SOCKET_REQUEST_FINISHED_COUNT]++;
++      agent.requestCount++;
++      debug('%s(requests: %s, finished: %s) free',
++        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
++
++      // should reuse on pedding requests?
++      const name = agent.getName(options);
++      if (socket.writable && agent.requests[name] && agent.requests[name].length) {
++        // will be reuse on agent free listener
++        socket[SOCKET_REQUEST_COUNT]++;
++        debug('%s(requests: %s, finished: %s) will be reuse on agent free event',
++          socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
++      }
++    }
++    socket.on('free', onFree);
++
++    function onClose(isError) {
++      debug('%s(requests: %s, finished: %s) close, isError: %s',
++        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT], isError);
++      agent.closeSocketCount++;
++    }
++    socket.on('close', onClose);
++
++    // start socket timeout handler
++    function onTimeout() {
++      // onTimeout and emitRequestTimeout(_http_client.js)
++      // https://github.com/nodejs/node/blob/v12.x/lib/_http_client.js#L711
++      const listenerCount = socket.listeners('timeout').length;
++      // node <= 10, default listenerCount is 1, onTimeout
++      // 11 < node <= 12, default listenerCount is 2, onTimeout and emitRequestTimeout
++      // node >= 13, default listenerCount is 3, onTimeout,
++      //   onTimeout(https://github.com/nodejs/node/pull/32000/files#diff-5f7fb0850412c6be189faeddea6c5359R333)
++      //   and emitRequestTimeout
++      const timeout = getSocketTimeout(socket);
++      const req = socket._httpMessage;
++      const reqTimeoutListenerCount = req && req.listeners('timeout').length || 0;
++      debug('%s(requests: %s, finished: %s) timeout after %sms, listeners %s, defaultTimeoutListenerCount %s, hasHttpRequest %s, HttpRequest timeoutListenerCount %s',
++        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
++        timeout, listenerCount, defaultTimeoutListenerCount, !!req, reqTimeoutListenerCount);
++      if (debug.enabled) {
++        debug('timeout listeners: %s', socket.listeners('timeout').map(f => f.name).join(', '));
++      }
++      agent.timeoutSocketCount++;
++      const name = agent.getName(options);
++      if (agent.freeSockets[name] && agent.freeSockets[name].indexOf(socket) !== -1) {
++        // free socket timeout, destroy quietly
++        socket.destroy();
++        // Remove it from freeSockets list immediately to prevent new requests
++        // from being sent through this socket.
++        agent.removeSocket(socket, options);
++        debug('%s is free, destroy quietly', socket[SOCKET_NAME]);
++      } else {
++        // if there is no any request socket timeout handler,
++        // agent need to handle socket timeout itself.
++        //
++        // custom request socket timeout handle logic must follow these rules:
++        //  1. Destroy socket first
++        //  2. Must emit socket 'agentRemove' event tell agent remove socket
++        //     from freeSockets list immediately.
++        //     Otherise you may be get 'socket hang up' error when reuse
++        //     free socket and timeout happen in the same time.
++        if (reqTimeoutListenerCount === 0) {
++          const error = new Error('Socket timeout');
++          error.code = 'ERR_SOCKET_TIMEOUT';
++          error.timeout = timeout;
++          // must manually call socket.end() or socket.destroy() to end the connection.
++          // https://nodejs.org/dist/latest-v10.x/docs/api/net.html#net_socket_settimeout_timeout_callback
++          socket.destroy(error);
++          agent.removeSocket(socket, options);
++          debug('%s destroy with timeout error', socket[SOCKET_NAME]);
++        }
++      }
++    }
++    socket.on('timeout', onTimeout);
++
++    function onError(err) {
++      const listenerCount = socket.listeners('error').length;
++      debug('%s(requests: %s, finished: %s) error: %s, listenerCount: %s',
++        socket[SOCKET_NAME], socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT],
++        err, listenerCount);
++      agent.errorSocketCount++;
++      if (listenerCount === 1) {
++        // if socket don't contain error event handler, don't catch it, emit it again
++        debug('%s emit uncaught error event', socket[SOCKET_NAME]);
++        socket.removeListener('error', onError);
++        socket.emit('error', err);
++      }
++    }
++    socket.on('error', onError);
++
++    function onRemove() {
++      debug('%s(requests: %s, finished: %s) agentRemove',
++        socket[SOCKET_NAME],
++        socket[SOCKET_REQUEST_COUNT], socket[SOCKET_REQUEST_FINISHED_COUNT]);
++      // We need this function for cases like HTTP 'upgrade'
++      // (defined by WebSockets) where we need to remove a socket from the
++      // pool because it'll be locked up indefinitely
++      socket.removeListener('close', onClose);
++      socket.removeListener('error', onError);
++      socket.removeListener('free', onFree);
++      socket.removeListener('timeout', onTimeout);
++      socket.removeListener('agentRemove', onRemove);
++    }
++    socket.on('agentRemove', onRemove);
++  }
++
++  agent = Agent;
++
++  function inspect(obj) {
++    const res = {};
++    for (const key in obj) {
++      res[key] = obj[key].length;
++    }
++    return res;
++  }
++  return agent;
+ }
+ 
+ var https_agent;
+ var hasRequiredHttps_agent;
+ 
+-function requireHttps_agent () {
+-	if (hasRequiredHttps_agent) return https_agent;
+-	hasRequiredHttps_agent = 1;
+-
+-	const OriginalHttpsAgent = require$$0__default$2.default.Agent;
+-	const HttpAgent = /*@__PURE__*/ requireAgent();
+-	const {
+-	  INIT_SOCKET,
+-	  CREATE_HTTPS_CONNECTION,
+-	} = /*@__PURE__*/ requireConstants();
+-
+-	class HttpsAgent extends HttpAgent {
+-	  constructor(options) {
+-	    super(options);
+-
+-	    this.defaultPort = 443;
+-	    this.protocol = 'https:';
+-	    this.maxCachedSessions = this.options.maxCachedSessions;
+-	    /* istanbul ignore next */
+-	    if (this.maxCachedSessions === undefined) {
+-	      this.maxCachedSessions = 100;
+-	    }
+-
+-	    this._sessionCache = {
+-	      map: {},
+-	      list: [],
+-	    };
+-	  }
+-
+-	  createConnection(options, oncreate) {
+-	    const socket = this[CREATE_HTTPS_CONNECTION](options, oncreate);
+-	    this[INIT_SOCKET](socket, options);
+-	    return socket;
+-	  }
+-	}
+-
+-	// https://github.com/nodejs/node/blob/master/lib/https.js#L89
+-	HttpsAgent.prototype[CREATE_HTTPS_CONNECTION] = OriginalHttpsAgent.prototype.createConnection;
+-
+-	[
+-	  'getName',
+-	  '_getSession',
+-	  '_cacheSession',
+-	  // https://github.com/nodejs/node/pull/4982
+-	  '_evictSession',
+-	].forEach(function(method) {
+-	  /* istanbul ignore next */
+-	  if (typeof OriginalHttpsAgent.prototype[method] === 'function') {
+-	    HttpsAgent.prototype[method] = OriginalHttpsAgent.prototype[method];
+-	  }
+-	});
+-
+-	https_agent = HttpsAgent;
+-	return https_agent;
++function requireHttps_agent() {
++  if (hasRequiredHttps_agent) return https_agent;
++  hasRequiredHttps_agent = 1;
++
++  const OriginalHttpsAgent = require$$0__default$2.default.Agent;
++  const HttpAgent = /*@__PURE__*/ requireAgent();
++  const {
++    INIT_SOCKET,
++    CREATE_HTTPS_CONNECTION,
++  } = /*@__PURE__*/ requireConstants();
++
++  class HttpsAgent extends HttpAgent {
++    constructor(options) {
++      super(options);
++
++      this.defaultPort = 443;
++      this.protocol = 'https:';
++      this.maxCachedSessions = this.options.maxCachedSessions;
++      /* istanbul ignore next */
++      if (this.maxCachedSessions === undefined) {
++        this.maxCachedSessions = 100;
++      }
++
++      this._sessionCache = {
++        map: {},
++        list: [],
++      };
++    }
++
++    createConnection(options, oncreate) {
++      const socket = this[CREATE_HTTPS_CONNECTION](options, oncreate);
++      this[INIT_SOCKET](socket, options);
++      return socket;
++    }
++  }
++
++  // https://github.com/nodejs/node/blob/master/lib/https.js#L89
++  HttpsAgent.prototype[CREATE_HTTPS_CONNECTION] = OriginalHttpsAgent.prototype.createConnection;
++
++  [
++    'getName',
++    '_getSession',
++    '_cacheSession',
++    // https://github.com/nodejs/node/pull/4982
++    '_evictSession',
++  ].forEach(function (method) {
++    /* istanbul ignore next */
++    if (typeof OriginalHttpsAgent.prototype[method] === 'function') {
++      HttpsAgent.prototype[method] = OriginalHttpsAgent.prototype[method];
++    }
++  });
++
++  https_agent = HttpsAgent;
++  return https_agent;
+ }
+ 
+ var hasRequiredAgentkeepalive;
+ 
+-function requireAgentkeepalive () {
+-	if (hasRequiredAgentkeepalive) return agentkeepalive.exports;
+-	hasRequiredAgentkeepalive = 1;
++function requireAgentkeepalive() {
++  if (hasRequiredAgentkeepalive) return agentkeepalive.exports;
++  hasRequiredAgentkeepalive = 1;
+ 
+-	agentkeepalive.exports = /*@__PURE__*/ requireAgent();
+-	agentkeepalive.exports.HttpsAgent = /*@__PURE__*/ requireHttps_agent();
+-	agentkeepalive.exports.constants = /*@__PURE__*/ requireConstants();
+-	return agentkeepalive.exports;
++  agentkeepalive.exports = /*@__PURE__*/ requireAgent();
++  agentkeepalive.exports.HttpsAgent = /*@__PURE__*/ requireHttps_agent();
++  agentkeepalive.exports.constants = /*@__PURE__*/ requireConstants();
++  return agentkeepalive.exports;
+ }
+ 
+ var agentkeepaliveExports = /*@__PURE__*/ requireAgentkeepalive();
+@@ -4106,83 +4106,83 @@ var HttpKeepAliveAgent = /*@__PURE__*/getDefaultExportFromCjs(agentkeepaliveExpo
+ var fastStableStringify$1;
+ var hasRequiredFastStableStringify;
+ 
+-function requireFastStableStringify () {
+-	if (hasRequiredFastStableStringify) return fastStableStringify$1;
+-	hasRequiredFastStableStringify = 1;
+-	var objToString = Object.prototype.toString;
+-	var objKeys = Object.keys || function(obj) {
+-			var keys = [];
+-			for (var name in obj) {
+-				keys.push(name);
+-			}
+-			return keys;
+-		};
+-
+-	function stringify(val, isArrayProp) {
+-		var i, max, str, keys, key, propVal, toStr;
+-		if (val === true) {
+-			return "true";
+-		}
+-		if (val === false) {
+-			return "false";
+-		}
+-		switch (typeof val) {
+-			case "object":
+-				if (val === null) {
+-					return null;
+-				} else if (val.toJSON && typeof val.toJSON === "function") {
+-					return stringify(val.toJSON(), isArrayProp);
+-				} else {
+-					toStr = objToString.call(val);
+-					if (toStr === "[object Array]") {
+-						str = '[';
+-						max = val.length - 1;
+-						for(i = 0; i < max; i++) {
+-							str += stringify(val[i], true) + ',';
+-						}
+-						if (max > -1) {
+-							str += stringify(val[i], true);
+-						}
+-						return str + ']';
+-					} else if (toStr === "[object Object]") {
+-						// only object is left
+-						keys = objKeys(val).sort();
+-						max = keys.length;
+-						str = "";
+-						i = 0;
+-						while (i < max) {
+-							key = keys[i];
+-							propVal = stringify(val[key], false);
+-							if (propVal !== undefined) {
+-								if (str) {
+-									str += ',';
+-								}
+-								str += JSON.stringify(key) + ':' + propVal;
+-							}
+-							i++;
+-						}
+-						return '{' + str + '}';
+-					} else {
+-						return JSON.stringify(val);
+-					}
+-				}
+-			case "function":
+-			case "undefined":
+-				return isArrayProp ? null : undefined;
+-			case "string":
+-				return JSON.stringify(val);
+-			default:
+-				return isFinite(val) ? val : null;
+-		}
+-	}
+-
+-	fastStableStringify$1 = function(val) {
+-		var returnVal = stringify(val, false);
+-		if (returnVal !== undefined) {
+-			return ''+ returnVal;
+-		}
+-	};
+-	return fastStableStringify$1;
++function requireFastStableStringify() {
++  if (hasRequiredFastStableStringify) return fastStableStringify$1;
++  hasRequiredFastStableStringify = 1;
++  var objToString = Object.prototype.toString;
++  var objKeys = Object.keys || function (obj) {
++    var keys = [];
++    for (var name in obj) {
++      keys.push(name);
++    }
++    return keys;
++  };
++
++  function stringify(val, isArrayProp) {
++    var i, max, str, keys, key, propVal, toStr;
++    if (val === true) {
++      return "true";
++    }
++    if (val === false) {
++      return "false";
++    }
++    switch (typeof val) {
++      case "object":
++        if (val === null) {
++          return null;
++        } else if (val.toJSON && typeof val.toJSON === "function") {
++          return stringify(val.toJSON(), isArrayProp);
++        } else {
++          toStr = objToString.call(val);
++          if (toStr === "[object Array]") {
++            str = '[';
++            max = val.length - 1;
++            for (i = 0; i < max; i++) {
++              str += stringify(val[i], true) + ',';
++            }
++            if (max > -1) {
++              str += stringify(val[i], true);
++            }
++            return str + ']';
++          } else if (toStr === "[object Object]") {
++            // only object is left
++            keys = objKeys(val).sort();
++            max = keys.length;
++            str = "";
++            i = 0;
++            while (i < max) {
++              key = keys[i];
++              propVal = stringify(val[key], false);
++              if (propVal !== undefined) {
++                if (str) {
++                  str += ',';
++                }
++                str += JSON.stringify(key) + ':' + propVal;
++              }
++              i++;
++            }
++            return '{' + str + '}';
++          } else {
++            return JSON.stringify(val);
++          }
++        }
++      case "function":
++      case "undefined":
++        return isArrayProp ? null : undefined;
++      case "string":
++        return JSON.stringify(val);
++      default:
++        return isFinite(val) ? val : null;
++    }
++  }
++
++  fastStableStringify$1 = function (val) {
++    var returnVal = stringify(val, false);
++    if (returnVal !== undefined) {
++      return '' + returnVal;
++    }
++  };
++  return fastStableStringify$1;
+ }
+ 
+ var fastStableStringifyExports = /*@__PURE__*/ requireFastStableStringify();
+@@ -4273,13 +4273,13 @@ class EpochSchedule {
+ }
+ 
+ var fetchImpl = typeof globalThis.fetch === 'function' ?
+-// The Fetch API is supported experimentally in Node 17.5+ and natively in Node 18+.
+-globalThis.fetch :
+-// Otherwise use the polyfill.
+-async function (input, init) {
+-  const processedInput = typeof input === 'string' && input.slice(0, 2) === '//' ? 'https:' + input : input;
+-  return await nodeFetch__namespace.default(processedInput, init);
+-};
++  // The Fetch API is supported experimentally in Node 17.5+ and natively in Node 18+.
++  globalThis.fetch :
++  // Otherwise use the polyfill.
++  async function (input, init) {
++    const processedInput = typeof input === 'string' && input.slice(0, 2) === '//' ? 'https:' + input : input;
++    return await nodeFetch__namespace.default(processedInput, init);
++  };
+ 
+ class RpcWebSocketClient extends rpcWebsockets.CommonClient {
+   constructor(address, options, generate_request_id) {
+@@ -4383,18 +4383,18 @@ function makeWebsocketUrl(endpoint) {
+     throw TypeError(`Failed to validate endpoint URL \`${endpoint}\``);
+   }
+   const [_,
+-  // eslint-disable-line @typescript-eslint/no-unused-vars
+-  hostish, portWithColon, rest] = matches;
++    // eslint-disable-line @typescript-eslint/no-unused-vars
++    hostish, portWithColon, rest] = matches;
+   const protocol = endpoint.startsWith('https:') ? 'wss:' : 'ws:';
+   const startPort = portWithColon == null ? null : parseInt(portWithColon.slice(1), 10);
+   const websocketPort =
+-  // Only shift the port by +1 as a convention for ws(s) only if given endpoint
+-  // is explicitly specifying the endpoint port (HTTP-based RPC), assuming
+-  // we're directly trying to connect to agave-validator's ws listening port.
+-  // When the endpoint omits the port, we're connecting to the protocol
+-  // default ports: http(80) or https(443) and it's assumed we're behind a reverse
+-  // proxy which manages WebSocket upgrade and backend port redirection.
+-  startPort == null ? '' : `:${startPort + 1}`;
++    // Only shift the port by +1 as a convention for ws(s) only if given endpoint
++    // is explicitly specifying the endpoint port (HTTP-based RPC), assuming
++    // we're directly trying to connect to agave-validator's ws listening port.
++    // When the endpoint omits the port, we're connecting to the protocol
++    // default ports: http(80) or https(443) and it's assumed we're behind a reverse
++    // proxy which manages WebSocket upgrade and backend port redirection.
++    startPort == null ? '' : `:${startPort + 1}`;
+   return `${protocol}//${hostish}${websocketPort}${rest}`;
+ }
+ 
+@@ -5054,7 +5054,7 @@ function createRpcClient(url, httpHeaders, customFetch, fetchMiddleware, disable
+       let too_many_requests_retries = 5;
+       let res;
+       let waitTime = 500;
+-      for (;;) {
++      for (; ;) {
+         if (fetchWithMiddleware) {
+           res = await fetchWithMiddleware(url, options);
+         } else {
+@@ -6811,7 +6811,7 @@ class Connection {
+             default:
+               // Exhaustive switch.
+               // eslint-disable-next-line @typescript-eslint/no-unused-vars
+-              (_ => {})(commitmentForStatus);
++              (_ => { })(commitmentForStatus);
+           }
+           result = {
+             context: signatureStatus.context,
+@@ -8035,7 +8035,7 @@ class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash = await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+         transaction.recentBlockhash = latestBlockhash.blockhash;
+@@ -8135,7 +8135,7 @@ class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash = await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+         transaction.recentBlockhash = latestBlockhash.blockhash;
+@@ -8182,7 +8182,7 @@ class Connection {
+     };
+     const skipPreflight = options && options.skipPreflight;
+     const preflightCommitment = skipPreflight === true ? 'processed' // FIXME Remove when https://github.com/anza-xyz/agave/pull/483 is deployed.
+-    : options && options.preflightCommitment || this.commitment;
++      : options && options.preflightCommitment || this.commitment;
+     if (options && options.maxRetries != null) {
+       config.maxRetries = options.maxRetries;
+     }
+@@ -8224,7 +8224,7 @@ class Connection {
+         try {
+           await this._rpcWebSocket.notify('ping');
+           // eslint-disable-next-line no-empty
+-        } catch {}
++        } catch { }
+       })();
+     }, 5000);
+     this._updateSubscriptions();
+@@ -8281,7 +8281,7 @@ class Connection {
+           try {
+             cb(nextSubscription.state);
+             // eslint-disable-next-line no-empty
+-          } catch {}
++          } catch { }
+         });
+       }
+     }
+@@ -8293,7 +8293,7 @@ class Connection {
+   _onSubscriptionStateChange(clientSubscriptionId, callback) {
+     const hash = this._subscriptionHashByClientSubscriptionId[clientSubscriptionId];
+     if (hash == null) {
+-      return () => {};
++      return () => { };
+     }
+     const stateChangeCallbacks = this._subscriptionStateChangeCallbacksByHash[hash] ||= new Set();
+     stateChangeCallbacks.add(callback);
+@@ -8340,133 +8340,133 @@ class Connection {
+       return activeWebSocketGeneration === this._rpcWebSocketGeneration;
+     };
+     await Promise.all(
+-    // Don't be tempted to change this to `Object.entries`. We call
+-    // `_updateSubscriptions` recursively when processing the state,
+-    // so it's important that we look up the *current* version of
+-    // each subscription, every time we process a hash.
+-    Object.keys(this._subscriptionsByHash).map(async hash => {
+-      const subscription = this._subscriptionsByHash[hash];
+-      if (subscription === undefined) {
+-        // This entry has since been deleted. Skip.
+-        return;
+-      }
+-      switch (subscription.state) {
+-        case 'pending':
+-        case 'unsubscribed':
+-          if (subscription.callbacks.size === 0) {
+-            /**
+-             * You can end up here when:
+-             *
+-             * - a subscription has recently unsubscribed
+-             *   without having new callbacks added to it
+-             *   while the unsubscribe was in flight, or
+-             * - when a pending subscription has its
+-             *   listeners removed before a request was
+-             *   sent to the server.
+-             *
+-             * Being that nobody is interested in this
+-             * subscription any longer, delete it.
+-             */
+-            delete this._subscriptionsByHash[hash];
+-            if (subscription.state === 'unsubscribed') {
+-              delete this._subscriptionCallbacksByServerSubscriptionId[subscription.serverSubscriptionId];
+-            }
+-            await this._updateSubscriptions();
+-            return;
+-          }
+-          await (async () => {
+-            const {
+-              args,
+-              method
+-            } = subscription;
+-            try {
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'subscribing'
+-              });
+-              const serverSubscriptionId = await this._rpcWebSocket.call(method, args);
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                serverSubscriptionId,
+-                state: 'subscribed'
+-              });
+-              this._subscriptionCallbacksByServerSubscriptionId[serverSubscriptionId] = subscription.callbacks;
+-              await this._updateSubscriptions();
+-            } catch (e) {
+-              console.error(`Received ${e instanceof Error ? '' : 'JSON-RPC '}error calling \`${method}\``, {
+-                args,
+-                error: e
+-              });
+-              if (!isCurrentConnectionStillActive()) {
+-                return;
++      // Don't be tempted to change this to `Object.entries`. We call
++      // `_updateSubscriptions` recursively when processing the state,
++      // so it's important that we look up the *current* version of
++      // each subscription, every time we process a hash.
++      Object.keys(this._subscriptionsByHash).map(async hash => {
++        const subscription = this._subscriptionsByHash[hash];
++        if (subscription === undefined) {
++          // This entry has since been deleted. Skip.
++          return;
++        }
++        switch (subscription.state) {
++          case 'pending':
++          case 'unsubscribed':
++            if (subscription.callbacks.size === 0) {
++              /**
++               * You can end up here when:
++               *
++               * - a subscription has recently unsubscribed
++               *   without having new callbacks added to it
++               *   while the unsubscribe was in flight, or
++               * - when a pending subscription has its
++               *   listeners removed before a request was
++               *   sent to the server.
++               *
++               * Being that nobody is interested in this
++               * subscription any longer, delete it.
++               */
++              delete this._subscriptionsByHash[hash];
++              if (subscription.state === 'unsubscribed') {
++                delete this._subscriptionCallbacksByServerSubscriptionId[subscription.serverSubscriptionId];
+               }
+-              // TODO: Maybe add an 'errored' state or a retry limit?
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'pending'
+-              });
+               await this._updateSubscriptions();
++              return;
+             }
+-          })();
+-          break;
+-        case 'subscribed':
+-          if (subscription.callbacks.size === 0) {
+-            // By the time we successfully set up a subscription
+-            // with the server, the client stopped caring about it.
+-            // Tear it down now.
+             await (async () => {
+               const {
+-                serverSubscriptionId,
+-                unsubscribeMethod
++                args,
++                method
+               } = subscription;
+-              if (this._subscriptionsAutoDisposedByRpc.has(serverSubscriptionId)) {
+-                /**
+-                 * Special case.
+-                 * If we're dealing with a subscription that has been auto-
+-                 * disposed by the RPC, then we can skip the RPC call to
+-                 * tear down the subscription here.
+-                 *
+-                 * NOTE: There is a proposal to eliminate this special case, here:
+-                 * https://github.com/solana-labs/solana/issues/18892
+-                 */
+-                this._subscriptionsAutoDisposedByRpc.delete(serverSubscriptionId);
+-              } else {
++              try {
+                 this._setSubscription(hash, {
+                   ...subscription,
+-                  state: 'unsubscribing'
++                  state: 'subscribing'
+                 });
++                const serverSubscriptionId = await this._rpcWebSocket.call(method, args);
+                 this._setSubscription(hash, {
+                   ...subscription,
+-                  state: 'unsubscribing'
++                  serverSubscriptionId,
++                  state: 'subscribed'
+                 });
+-                try {
+-                  await this._rpcWebSocket.call(unsubscribeMethod, [serverSubscriptionId]);
+-                } catch (e) {
+-                  if (e instanceof Error) {
+-                    console.error(`${unsubscribeMethod} error:`, e.message);
+-                  }
+-                  if (!isCurrentConnectionStillActive()) {
+-                    return;
+-                  }
+-                  // TODO: Maybe add an 'errored' state or a retry limit?
+-                  this._setSubscription(hash, {
+-                    ...subscription,
+-                    state: 'subscribed'
+-                  });
+-                  await this._updateSubscriptions();
++                this._subscriptionCallbacksByServerSubscriptionId[serverSubscriptionId] = subscription.callbacks;
++                await this._updateSubscriptions();
++              } catch (e) {
++                console.error(`Received ${e instanceof Error ? '' : 'JSON-RPC '}error calling \`${method}\``, {
++                  args,
++                  error: e
++                });
++                if (!isCurrentConnectionStillActive()) {
+                   return;
+                 }
++                // TODO: Maybe add an 'errored' state or a retry limit?
++                this._setSubscription(hash, {
++                  ...subscription,
++                  state: 'pending'
++                });
++                await this._updateSubscriptions();
+               }
+-              this._setSubscription(hash, {
+-                ...subscription,
+-                state: 'unsubscribed'
+-              });
+-              await this._updateSubscriptions();
+             })();
+-          }
+-          break;
+-      }
+-    }));
++            break;
++          case 'subscribed':
++            if (subscription.callbacks.size === 0) {
++              // By the time we successfully set up a subscription
++              // with the server, the client stopped caring about it.
++              // Tear it down now.
++              await (async () => {
++                const {
++                  serverSubscriptionId,
++                  unsubscribeMethod
++                } = subscription;
++                if (this._subscriptionsAutoDisposedByRpc.has(serverSubscriptionId)) {
++                  /**
++                   * Special case.
++                   * If we're dealing with a subscription that has been auto-
++                   * disposed by the RPC, then we can skip the RPC call to
++                   * tear down the subscription here.
++                   *
++                   * NOTE: There is a proposal to eliminate this special case, here:
++                   * https://github.com/solana-labs/solana/issues/18892
++                   */
++                  this._subscriptionsAutoDisposedByRpc.delete(serverSubscriptionId);
++                } else {
++                  this._setSubscription(hash, {
++                    ...subscription,
++                    state: 'unsubscribing'
++                  });
++                  this._setSubscription(hash, {
++                    ...subscription,
++                    state: 'unsubscribing'
++                  });
++                  try {
++                    await this._rpcWebSocket.call(unsubscribeMethod, [serverSubscriptionId]);
++                  } catch (e) {
++                    if (e instanceof Error) {
++                      console.error(`${unsubscribeMethod} error:`, e.message);
++                    }
++                    if (!isCurrentConnectionStillActive()) {
++                      return;
++                    }
++                    // TODO: Maybe add an 'errored' state or a retry limit?
++                    this._setSubscription(hash, {
++                      ...subscription,
++                      state: 'subscribed'
++                    });
++                    await this._updateSubscriptions();
++                    return;
++                  }
++                }
++                this._setSubscription(hash, {
++                  ...subscription,
++                  state: 'unsubscribed'
++                });
++                await this._updateSubscriptions();
++              })();
++            }
++            break;
++        }
++      }));
+   }
+ 
+   /**
+@@ -8480,11 +8480,11 @@ class Connection {
+     callbacks.forEach(cb => {
+       try {
+         cb(
+-        // I failed to find a way to convince TypeScript that `cb` is of type
+-        // `TCallback` which is certainly compatible with `Parameters<TCallback>`.
+-        // See https://github.com/microsoft/TypeScript/issues/47615
+-        // @ts-ignore
+-        ...callbackArgs);
++          // I failed to find a way to convince TypeScript that `cb` is of type
++          // `TCallback` which is certainly compatible with `Parameters<TCallback>`.
++          // See https://github.com/microsoft/TypeScript/issues/47615
++          // @ts-ignore
++          ...callbackArgs);
+       } catch (e) {
+         console.error(e);
+       }
+@@ -8506,31 +8506,31 @@ class Connection {
+    * @internal
+    */
+   _makeSubscription(subscriptionConfig,
+-  /**
+-   * When preparing `args` for a call to `_makeSubscription`, be sure
+-   * to carefully apply a default `commitment` property, if necessary.
+-   *
+-   * - If the user supplied a `commitment` use that.
+-   * - Otherwise, if the `Connection::commitment` is set, use that.
+-   * - Otherwise, set it to the RPC server default: `finalized`.
+-   *
+-   * This is extremely important to ensure that these two fundamentally
+-   * identical subscriptions produce the same identifying hash:
+-   *
+-   * - A subscription made without specifying a commitment.
+-   * - A subscription made where the commitment specified is the same
+-   *   as the default applied to the subscription above.
+-   *
+-   * Example; these two subscriptions must produce the same hash:
+-   *
+-   * - An `accountSubscribe` subscription for `'PUBKEY'`
+-   * - An `accountSubscribe` subscription for `'PUBKEY'` with commitment
+-   *   `'finalized'`.
+-   *
+-   * See the 'making a subscription with defaulted params omitted' test
+-   * in `connection-subscriptions.ts` for more.
+-   */
+-  args) {
++    /**
++     * When preparing `args` for a call to `_makeSubscription`, be sure
++     * to carefully apply a default `commitment` property, if necessary.
++     *
++     * - If the user supplied a `commitment` use that.
++     * - Otherwise, if the `Connection::commitment` is set, use that.
++     * - Otherwise, set it to the RPC server default: `finalized`.
++     *
++     * This is extremely important to ensure that these two fundamentally
++     * identical subscriptions produce the same identifying hash:
++     *
++     * - A subscription made without specifying a commitment.
++     * - A subscription made where the commitment specified is the same
++     *   as the default applied to the subscription above.
++     *
++     * Example; these two subscriptions must produce the same hash:
++     *
++     * - An `accountSubscribe` subscription for `'PUBKEY'`
++     * - An `accountSubscribe` subscription for `'PUBKEY'` with commitment
++     *   `'finalized'`.
++     *
++     * See the 'making a subscription with defaulted params omitted' test
++     * in `connection-subscriptions.ts` for more.
++     */
++    args) {
+     const clientSubscriptionId = this._nextClientSubscriptionId++;
+     const hash = fastStableStringify([subscriptionConfig.method, args]);
+     const existingSubscription = this._subscriptionsByHash[hash];
+@@ -8576,8 +8576,8 @@ class Connection {
+       config
+     } = extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs([publicKey.toBase58()], commitment || this._commitment || 'finalized',
+-    // Apply connection/server default.
+-    'base64', config);
++      // Apply connection/server default.
++      'base64', config);
+     return this._makeSubscription({
+       callback,
+       method: 'accountSubscribe',
+@@ -8628,10 +8628,10 @@ class Connection {
+       config
+     } = extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs([programId.toBase58()], commitment || this._commitment || 'finalized',
+-    // Apply connection/server default.
+-    'base64' /* encoding */, config ? config : maybeFilters ? {
+-      filters: applyDefaultMemcmpEncodingToFilters(maybeFilters)
+-    } : undefined /* extra */);
++      // Apply connection/server default.
++      'base64' /* encoding */, config ? config : maybeFilters ? {
++        filters: applyDefaultMemcmpEncodingToFilters(maybeFilters)
++      } : undefined /* extra */);
+     return this._makeSubscription({
+       callback,
+       method: 'programSubscribe',
+@@ -9069,7 +9069,7 @@ class AddressLookupTableInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+   static decodeInstructionType(instruction) {
+     this.checkProgramId(instruction.programId);
+     const instructionTypeLayout = BufferLayout__namespace.u32('instruction');
+@@ -9160,7 +9160,7 @@ class AddressLookupTableProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+   static createLookupTable(params) {
+     const [lookupTableAddress, bumpSeed] = PublicKey.findProgramAddressSync([params.authority.toBuffer(), codecsNumbers.getU64Encoder().encode(params.recentSlot)], this.programId);
+     const type = LOOKUP_TABLE_INSTRUCTION_LAYOUTS.CreateLookupTable;
+@@ -9290,7 +9290,7 @@ class ComputeBudgetInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a compute budget instruction and retrieve the instruction type.
+@@ -9426,7 +9426,7 @@ class ComputeBudgetProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Compute Budget program
+@@ -9493,7 +9493,7 @@ class Ed25519Program {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the ed25519 program
+@@ -9519,7 +9519,7 @@ class Ed25519Program {
+     const numSignatures = 1;
+     const instructionData = buffer.Buffer.alloc(messageDataOffset + message.length);
+     const index = instructionIndex == null ? 0xffff // An index of `u16::MAX` makes it default to the current instruction.
+-    : instructionIndex;
++      : instructionIndex;
+     ED25519_INSTRUCTION_LAYOUT.encode({
+       numSignatures,
+       padding: 0,
+@@ -9598,7 +9598,7 @@ class Secp256k1Program {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the secp256k1 program
+@@ -9809,7 +9809,7 @@ class StakeInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a stake instruction and retrieve the instruction type.
+@@ -10064,7 +10064,7 @@ class StakeProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Stake program
+@@ -10332,8 +10332,8 @@ class StakeProgram {
+    * Generate a Transaction that splits Stake tokens into another stake account
+    */
+   static split(params,
+-  // Compute the cost of allocating the new stake account in lamports
+-  rentExemptReserve) {
++    // Compute the cost of allocating the new stake account in lamports
++    rentExemptReserve) {
+     const transaction = new Transaction();
+     transaction.add(SystemProgram.createAccount({
+       fromPubkey: params.authorizedPubkey,
+@@ -10350,8 +10350,8 @@ class StakeProgram {
+    * derived from a base public key and seed
+    */
+   static splitWithSeed(params,
+-  // If this stake account is new, compute the cost of allocating it in lamports
+-  rentExemptReserve) {
++    // If this stake account is new, compute the cost of allocating it in lamports
++    rentExemptReserve) {
+     const {
+       stakePubkey,
+       authorizedPubkey,
+@@ -10559,7 +10559,7 @@ class VoteInstruction {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Decode a vote instruction and retrieve the instruction type.
+@@ -10731,7 +10731,7 @@ class VoteProgram {
+   /**
+    * @internal
+    */
+-  constructor() {}
++  constructor() { }
+ 
+   /**
+    * Public key that identifies the Vote program
+diff --git a/node_modules/@solana/web3.js/src/connection.ts b/node_modules/@solana/web3.js/src/connection.ts
+index 7762019..2ceae1c 100644
+--- a/node_modules/@solana/web3.js/src/connection.ts
++++ b/node_modules/@solana/web3.js/src/connection.ts
+@@ -2,11 +2,11 @@ import HttpKeepAliveAgent, {
+   HttpsAgent as HttpsKeepAliveAgent,
+ } from 'agentkeepalive';
+ import bs58 from 'bs58';
+-import {Buffer} from 'buffer';
++import { Buffer } from 'buffer';
+ // @ts-ignore
+ import fastStableStringify from 'fast-stable-stringify';
+-import type {Agent as NodeHttpAgent} from 'http';
+-import {Agent as NodeHttpsAgent} from 'https';
++import type { Agent as NodeHttpAgent } from 'http';
++import { Agent as NodeHttpsAgent } from 'https';
+ import {
+   type as pick,
+   number,
+@@ -25,39 +25,39 @@ import {
+   unknown,
+   any,
+ } from 'superstruct';
+-import type {Struct} from 'superstruct';
+-import RpcClient from 'jayson/lib/client/browser';
+-import {JSONRPCError} from 'jayson';
++import type { Struct } from 'superstruct';
++import RpcClient from 'jayson/lib/client/browser/index.js';
++import { JSONRPCError } from 'jayson';
+ 
+-import {EpochSchedule} from './epoch-schedule';
+-import {SendTransactionError, SolanaJSONRPCError} from './errors';
++import { EpochSchedule } from './epoch-schedule';
++import { SendTransactionError, SolanaJSONRPCError } from './errors';
+ import fetchImpl from './fetch-impl';
+-import {DurableNonce, NonceAccount} from './nonce-account';
+-import {PublicKey} from './publickey';
+-import {Signer} from './keypair';
++import { DurableNonce, NonceAccount } from './nonce-account';
++import { PublicKey } from './publickey';
++import { Signer } from './keypair';
+ import RpcWebSocketClient from './rpc-websocket';
+-import {MS_PER_SLOT} from './timing';
++import { MS_PER_SLOT } from './timing';
+ import {
+   Transaction,
+   TransactionStatus,
+   TransactionVersion,
+   VersionedTransaction,
+ } from './transaction';
+-import {Message, MessageHeader, MessageV0, VersionedMessage} from './message';
+-import {AddressLookupTableAccount} from './programs/address-lookup-table/state';
++import { Message, MessageHeader, MessageV0, VersionedMessage } from './message';
++import { AddressLookupTableAccount } from './programs/address-lookup-table/state';
+ import assert from './utils/assert';
+-import {sleep} from './utils/sleep';
+-import {toBuffer} from './utils/to-buffer';
++import { sleep } from './utils/sleep';
++import { toBuffer } from './utils/to-buffer';
+ import {
+   TransactionExpiredBlockheightExceededError,
+   TransactionExpiredNonceInvalidError,
+   TransactionExpiredTimeoutError,
+ } from './transaction/expiry-custom-errors';
+-import {makeWebsocketUrl} from './utils/makeWebsocketUrl';
+-import type {Blockhash} from './blockhash';
+-import type {FeeCalculator} from './fee-calculator';
+-import type {TransactionSignature} from './transaction';
+-import type {CompiledInstruction} from './message';
++import { makeWebsocketUrl } from './utils/makeWebsocketUrl';
++import type { Blockhash } from './blockhash';
++import type { FeeCalculator } from './fee-calculator';
++import type { TransactionSignature } from './transaction';
++import type { CompiledInstruction } from './message';
+ 
+ const PublicKeyFromString = coerce(
+   instance(PublicKey),
+@@ -105,7 +105,7 @@ type ClientSubscriptionId = number;
+  */
+ type BaseSubscription<TMethod = SubscriptionConfig['method']> = Readonly<{
+   args: IWSRequestParams;
+-  callbacks: Set<Extract<SubscriptionConfig, {method: TMethod}>['callback']>;
++  callbacks: Set<Extract<SubscriptionConfig, { method: TMethod }>['callback']>;
+ }>;
+ /**
+  * @internal
+@@ -117,32 +117,32 @@ type StatefulSubscription = Readonly<
+   // New subscriptions that have not yet been
+   // sent to the server start in this state.
+   | {
+-      state: 'pending';
+-    }
++    state: 'pending';
++  }
+   // These subscriptions have been sent to the server
+   // and are waiting for the server to acknowledge them.
+   | {
+-      state: 'subscribing';
+-    }
++    state: 'subscribing';
++  }
+   // These subscriptions have been acknowledged by the
+   // server and have been assigned server subscription ids.
+   | {
+-      serverSubscriptionId: ServerSubscriptionId;
+-      state: 'subscribed';
+-    }
++    serverSubscriptionId: ServerSubscriptionId;
++    state: 'subscribed';
++  }
+   // These subscriptions are intended to be torn down and
+   // are waiting on an acknowledgement from the server.
+   | {
+-      serverSubscriptionId: ServerSubscriptionId;
+-      state: 'unsubscribing';
+-    }
++    serverSubscriptionId: ServerSubscriptionId;
++    state: 'unsubscribing';
++  }
+   // The request to tear down these subscriptions has been
+   // acknowledged by the server. The `serverSubscriptionId`
+   // is the id of the now-dead subscription.
+   | {
+-      serverSubscriptionId: ServerSubscriptionId;
+-      state: 'unsubscribed';
+-    }
++    serverSubscriptionId: ServerSubscriptionId;
++    state: 'unsubscribed';
++  }
+ >;
+ /**
+  * A type that encapsulates a subscription's RPC method
+@@ -150,40 +150,40 @@ type StatefulSubscription = Readonly<
+  */
+ type SubscriptionConfig = Readonly<
+   | {
+-      callback: AccountChangeCallback;
+-      method: 'accountSubscribe';
+-      unsubscribeMethod: 'accountUnsubscribe';
+-    }
++    callback: AccountChangeCallback;
++    method: 'accountSubscribe';
++    unsubscribeMethod: 'accountUnsubscribe';
++  }
+   | {
+-      callback: LogsCallback;
+-      method: 'logsSubscribe';
+-      unsubscribeMethod: 'logsUnsubscribe';
+-    }
++    callback: LogsCallback;
++    method: 'logsSubscribe';
++    unsubscribeMethod: 'logsUnsubscribe';
++  }
+   | {
+-      callback: ProgramAccountChangeCallback;
+-      method: 'programSubscribe';
+-      unsubscribeMethod: 'programUnsubscribe';
+-    }
++    callback: ProgramAccountChangeCallback;
++    method: 'programSubscribe';
++    unsubscribeMethod: 'programUnsubscribe';
++  }
+   | {
+-      callback: RootChangeCallback;
+-      method: 'rootSubscribe';
+-      unsubscribeMethod: 'rootUnsubscribe';
+-    }
++    callback: RootChangeCallback;
++    method: 'rootSubscribe';
++    unsubscribeMethod: 'rootUnsubscribe';
++  }
+   | {
+-      callback: SignatureSubscriptionCallback;
+-      method: 'signatureSubscribe';
+-      unsubscribeMethod: 'signatureUnsubscribe';
+-    }
++    callback: SignatureSubscriptionCallback;
++    method: 'signatureSubscribe';
++    unsubscribeMethod: 'signatureUnsubscribe';
++  }
+   | {
+-      callback: SlotChangeCallback;
+-      method: 'slotSubscribe';
+-      unsubscribeMethod: 'slotUnsubscribe';
+-    }
++    callback: SlotChangeCallback;
++    method: 'slotSubscribe';
++    unsubscribeMethod: 'slotUnsubscribe';
++  }
+   | {
+-      callback: SlotUpdateCallback;
+-      method: 'slotsUpdatesSubscribe';
+-      unsubscribeMethod: 'slotsUpdatesUnsubscribe';
+-    }
++    callback: SlotUpdateCallback;
++    method: 'slotsUpdatesSubscribe';
++    unsubscribeMethod: 'slotsUpdatesUnsubscribe';
++  }
+ >;
+ /**
+  * @internal
+@@ -221,11 +221,11 @@ export type RpcParams = {
+ 
+ export type TokenAccountsFilter =
+   | {
+-      mint: PublicKey;
+-    }
++    mint: PublicKey;
++  }
+   | {
+-      programId: PublicKey;
+-    };
++    programId: PublicKey;
++  };
+ 
+ /**
+  * Extra contextual information for RPC responses
+@@ -366,19 +366,19 @@ function assertEndpointUrl(putativeUrl: string) {
+ 
+ /** @internal */
+ function extractCommitmentFromConfig<TConfig>(
+-  commitmentOrConfig?: Commitment | ({commitment?: Commitment} & TConfig),
++  commitmentOrConfig?: Commitment | ({ commitment?: Commitment } & TConfig),
+ ) {
+   let commitment: Commitment | undefined;
+   let config: Omit<TConfig, 'commitment'> | undefined;
+   if (typeof commitmentOrConfig === 'string') {
+     commitment = commitmentOrConfig;
+   } else if (commitmentOrConfig) {
+-    const {commitment: specifiedCommitment, ...specifiedConfig} =
++    const { commitment: specifiedCommitment, ...specifiedConfig } =
+       commitmentOrConfig;
+     commitment = specifiedCommitment;
+     config = specifiedConfig;
+   }
+-  return {commitment, config};
++  return { commitment, config };
+ }
+ 
+ /**
+@@ -390,12 +390,12 @@ function applyDefaultMemcmpEncodingToFilters(
+   return filters.map(filter =>
+     'memcmp' in filter
+       ? {
+-          ...filter,
+-          memcmp: {
+-            ...filter.memcmp,
+-            encoding: filter.memcmp.encoding ?? 'base58',
+-          },
+-        }
++        ...filter,
++        memcmp: {
++          ...filter.memcmp,
++          encoding: filter.memcmp.encoding ?? 'base58',
++        },
++      }
+       : filter,
+   );
+ }
+@@ -1589,7 +1589,7 @@ function createRpcClient(
+     if (httpAgent != null) {
+       console.warn(
+         'You have supplied an `httpAgent` when creating a `Connection` in a browser environment.' +
+-          'It has been ignored; `httpAgent` is only used in Node environments.',
++        'It has been ignored; `httpAgent` is only used in Node environments.',
+       );
+     }
+   } else {
+@@ -1614,16 +1614,16 @@ function createRpcClient(
+         if (isHttps && !(httpAgent instanceof NodeHttpsAgent)) {
+           throw new Error(
+             'The endpoint `' +
+-              url +
+-              '` can only be paired with an `https.Agent`. You have, instead, supplied an ' +
+-              '`http.Agent` through `httpAgent`.',
++            url +
++            '` can only be paired with an `https.Agent`. You have, instead, supplied an ' +
++            '`http.Agent` through `httpAgent`.',
+           );
+         } else if (!isHttps && httpAgent instanceof NodeHttpsAgent) {
+           throw new Error(
+             'The endpoint `' +
+-              url +
+-              '` can only be paired with an `http.Agent`. You have, instead, supplied an ' +
+-              '`https.Agent` through `httpAgent`.',
++            url +
++            '` can only be paired with an `http.Agent`. You have, instead, supplied an ' +
++            '`https.Agent` through `httpAgent`.',
+           );
+         }
+         agent = httpAgent;
+@@ -1668,7 +1668,7 @@ function createRpcClient(
+       let too_many_requests_retries = 5;
+       let res: Response;
+       let waitTime = 500;
+-      for (;;) {
++      for (; ;) {
+         if (fetchWithMiddleware) {
+           res = await fetchWithMiddleware(url, options);
+         } else {
+@@ -2071,48 +2071,48 @@ const SlotNotificationResult = pick({
+  */
+ export type SlotUpdate =
+   | {
+-      type: 'firstShredReceived';
+-      slot: number;
+-      timestamp: number;
+-    }
++    type: 'firstShredReceived';
++    slot: number;
++    timestamp: number;
++  }
+   | {
+-      type: 'completed';
+-      slot: number;
+-      timestamp: number;
+-    }
++    type: 'completed';
++    slot: number;
++    timestamp: number;
++  }
+   | {
+-      type: 'createdBank';
+-      slot: number;
+-      timestamp: number;
+-      parent: number;
+-    }
++    type: 'createdBank';
++    slot: number;
++    timestamp: number;
++    parent: number;
++  }
+   | {
+-      type: 'frozen';
+-      slot: number;
+-      timestamp: number;
+-      stats: {
+-        numTransactionEntries: number;
+-        numSuccessfulTransactions: number;
+-        numFailedTransactions: number;
+-        maxTransactionsPerEntry: number;
+-      };
+-    }
++    type: 'frozen';
++    slot: number;
++    timestamp: number;
++    stats: {
++      numTransactionEntries: number;
++      numSuccessfulTransactions: number;
++      numFailedTransactions: number;
++      maxTransactionsPerEntry: number;
++    };
++  }
+   | {
+-      type: 'dead';
+-      slot: number;
+-      timestamp: number;
+-      err: string;
+-    }
++    type: 'dead';
++    slot: number;
++    timestamp: number;
++    err: string;
++  }
+   | {
+-      type: 'optimisticConfirmation';
+-      slot: number;
+-      timestamp: number;
+-    }
++    type: 'optimisticConfirmation';
++    slot: number;
++    timestamp: number;
++  }
+   | {
+-      type: 'root';
+-      slot: number;
+-      timestamp: number;
+-    };
++    type: 'root';
++    slot: number;
++    timestamp: number;
++  };
+ 
+ /**
+  * @internal
+@@ -2706,15 +2706,15 @@ export type MemcmpFilter = {
+     offset: number;
+   } & (
+     | {
+-        encoding?: 'base58'; // Base-58 is the default when not supplied.
+-        /** data to match, as base-58 encoded string and limited to less than 129 bytes */
+-        bytes: string;
+-      }
++      encoding?: 'base58'; // Base-58 is the default when not supplied.
++      /** data to match, as base-58 encoded string and limited to less than 129 bytes */
++      bytes: string;
++    }
+     | {
+-        encoding: 'base64';
+-        /** data to match, as base-64 encoded string */
+-        bytes: string;
+-      }
++      encoding: 'base64';
++      /** data to match, as base-64 encoded string */
++      bytes: string;
++    }
+   );
+ };
+ 
+@@ -3122,11 +3122,11 @@ export class Connection {
+   /** @internal */ _rpcWebSocket: RpcWebSocketClient;
+   /** @internal */ _rpcWebSocketConnected: boolean = false;
+   /** @internal */ _rpcWebSocketHeartbeat: ReturnType<
+-    typeof setInterval
+-  > | null = null;
++  typeof setInterval
++> | null = null;
+   /** @internal */ _rpcWebSocketIdleTimeout: ReturnType<
+-    typeof setTimeout
+-  > | null = null;
++  typeof setTimeout
++> | null = null;
+   /** @internal
+    * A number that we increment every time an active connection closes.
+    * Used to determine whether the same socket connection that was open
+@@ -3138,41 +3138,41 @@ export class Connection {
+   /** @internal */ _disableBlockhashCaching: boolean = false;
+   /** @internal */ _pollingBlockhash: boolean = false;
+   /** @internal */ _blockhashInfo: {
+-    latestBlockhash: BlockhashWithExpiryBlockHeight | null;
+-    lastFetch: number;
+-    simulatedSignatures: Array<string>;
+-    transactionSignatures: Array<string>;
+-  } = {
+-    latestBlockhash: null,
+-    lastFetch: 0,
+-    transactionSignatures: [],
+-    simulatedSignatures: [],
+-  };
++  latestBlockhash: BlockhashWithExpiryBlockHeight | null;
++  lastFetch: number;
++  simulatedSignatures: Array<string>;
++  transactionSignatures: Array<string>;
++} = {
++      latestBlockhash: null,
++      lastFetch: 0,
++      transactionSignatures: [],
++      simulatedSignatures: [],
++    };
+ 
+   /** @internal */ private _nextClientSubscriptionId: ClientSubscriptionId = 0;
+   /** @internal */ private _subscriptionDisposeFunctionsByClientSubscriptionId: {
+-    [clientSubscriptionId: ClientSubscriptionId]:
++      [clientSubscriptionId: ClientSubscriptionId]:
+       | SubscriptionDisposeFn
+       | undefined;
+-  } = {};
++    } = {};
+   /** @internal */ private _subscriptionHashByClientSubscriptionId: {
+-    [clientSubscriptionId: ClientSubscriptionId]:
++      [clientSubscriptionId: ClientSubscriptionId]:
+       | SubscriptionConfigHash
+       | undefined;
+-  } = {};
++    } = {};
+   /** @internal */ private _subscriptionStateChangeCallbacksByHash: {
+-    [hash: SubscriptionConfigHash]:
++      [hash: SubscriptionConfigHash]:
+       | Set<SubscriptionStateChangeCallback>
+       | undefined;
+-  } = {};
++    } = {};
+   /** @internal */ private _subscriptionCallbacksByServerSubscriptionId: {
+-    [serverSubscriptionId: ServerSubscriptionId]:
++      [serverSubscriptionId: ServerSubscriptionId]:
+       | Set<SubscriptionConfig['callback']>
+       | undefined;
+-  } = {};
++    } = {};
+   /** @internal */ private _subscriptionsByHash: {
+-    [hash: SubscriptionConfigHash]: Subscription | undefined;
+-  } = {};
++      [hash: SubscriptionConfigHash]: Subscription | undefined;
++    } = {};
+   /**
+    * Special case.
+    * After a signature is processed, RPCs automatically dispose of the
+@@ -3292,7 +3292,7 @@ export class Connection {
+     commitmentOrConfig?: Commitment | GetBalanceConfig,
+   ): Promise<RpcResponseAndContext<number>> {
+     /** @internal */
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [publicKey.toBase58()],
+@@ -3381,7 +3381,7 @@ export class Connection {
+   ): Promise<RpcResponseAndContext<Supply>> {
+     let configArg: GetSupplyConfig = {};
+     if (typeof config === 'string') {
+-      configArg = {commitment: config};
++      configArg = { commitment: config };
+     } else if (config) {
+       configArg = {
+         ...config,
+@@ -3446,13 +3446,13 @@ export class Connection {
+     filter: TokenAccountsFilter,
+     commitmentOrConfig?: Commitment | GetTokenAccountsByOwnerConfig,
+   ): Promise<RpcResponseAndContext<GetProgramAccountsResponse>> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     let _args: any[] = [ownerAddress.toBase58()];
+     if ('mint' in filter) {
+-      _args.push({mint: filter.mint.toBase58()});
++      _args.push({ mint: filter.mint.toBase58() });
+     } else {
+-      _args.push({programId: filter.programId.toBase58()});
++      _args.push({ programId: filter.programId.toBase58() });
+     }
+ 
+     const args = this._buildArgs(_args, commitment, 'base64', config);
+@@ -3478,14 +3478,14 @@ export class Connection {
+     commitment?: Commitment,
+   ): Promise<
+     RpcResponseAndContext<
+-      Array<{pubkey: PublicKey; account: AccountInfo<ParsedAccountData>}>
++      Array<{ pubkey: PublicKey; account: AccountInfo<ParsedAccountData> }>
+     >
+   > {
+     let _args: any[] = [ownerAddress.toBase58()];
+     if ('mint' in filter) {
+-      _args.push({mint: filter.mint.toBase58()});
++      _args.push({ mint: filter.mint.toBase58() });
+     } else {
+-      _args.push({programId: filter.programId.toBase58()});
++      _args.push({ programId: filter.programId.toBase58() });
+     }
+ 
+     const args = this._buildArgs(_args, commitment, 'jsonParsed');
+@@ -3546,7 +3546,7 @@ export class Connection {
+     publicKey: PublicKey,
+     commitmentOrConfig?: Commitment | GetAccountInfoConfig,
+   ): Promise<RpcResponseAndContext<AccountInfo<Buffer> | null>> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [publicKey.toBase58()],
+@@ -3577,7 +3577,7 @@ export class Connection {
+   ): Promise<
+     RpcResponseAndContext<AccountInfo<Buffer | ParsedAccountData> | null>
+   > {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [publicKey.toBase58()],
+@@ -3628,7 +3628,7 @@ export class Connection {
+   ): Promise<
+     RpcResponseAndContext<(AccountInfo<Buffer | ParsedAccountData> | null)[]>
+   > {
+-    const {commitment, config} = extractCommitmentFromConfig(rawConfig);
++    const { commitment, config } = extractCommitmentFromConfig(rawConfig);
+     const keys = publicKeys.map(key => key.toBase58());
+     const args = this._buildArgs([keys], commitment, 'jsonParsed', config);
+     const unsafeRes = await this._rpcRequest('getMultipleAccounts', args);
+@@ -3652,7 +3652,7 @@ export class Connection {
+     publicKeys: PublicKey[],
+     commitmentOrConfig?: Commitment | GetMultipleAccountsConfig,
+   ): Promise<RpcResponseAndContext<(AccountInfo<Buffer> | null)[]>> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const keys = publicKeys.map(key => key.toBase58());
+     const args = this._buildArgs([keys], commitment, 'base64', config);
+@@ -3694,7 +3694,7 @@ export class Connection {
+     commitmentOrConfig?: Commitment | GetStakeActivationConfig,
+     epoch?: number,
+   ): Promise<StakeActivationData> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [publicKey.toBase58()],
+@@ -3725,7 +3725,7 @@ export class Connection {
+   async getProgramAccounts(
+     programId: PublicKey,
+     configOrCommitment: GetProgramAccountsConfig &
+-      Readonly<{withContext: true}>,
++      Readonly<{ withContext: true }>,
+   ): Promise<RpcResponseAndContext<GetProgramAccountsResponse>>;
+   // eslint-disable-next-line no-dupe-class-members
+   async getProgramAccounts(
+@@ -3740,9 +3740,9 @@ export class Connection {
+     | GetProgramAccountsResponse
+     | RpcResponseAndContext<GetProgramAccountsResponse>
+   > {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(configOrCommitment);
+-    const {encoding, ...configWithoutEncoding} = config || {};
++    const { encoding, ...configWithoutEncoding } = config || {};
+     const args = this._buildArgs(
+       [programId.toBase58()],
+       commitment,
+@@ -3751,10 +3751,10 @@ export class Connection {
+         ...configWithoutEncoding,
+         ...(configWithoutEncoding.filters
+           ? {
+-              filters: applyDefaultMemcmpEncodingToFilters(
+-                configWithoutEncoding.filters,
+-              ),
+-            }
++            filters: applyDefaultMemcmpEncodingToFilters(
++              configWithoutEncoding.filters,
++            ),
++          }
+           : null),
+       },
+     );
+@@ -3787,7 +3787,7 @@ export class Connection {
+       account: AccountInfo<Buffer | ParsedAccountData>;
+     }>
+   > {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(configOrCommitment);
+     const args = this._buildArgs(
+       [programId.toBase58()],
+@@ -3913,7 +3913,7 @@ export class Connection {
+               context,
+               value: result,
+             };
+-            resolve({__type: TransactionStatus.PROCESSED, response});
++            resolve({ __type: TransactionStatus.PROCESSED, response });
+           },
+           commitment,
+         );
+@@ -3942,7 +3942,7 @@ export class Connection {
+           if (response == null) {
+             return;
+           }
+-          const {context, value} = response;
++          const { context, value } = response;
+           if (value == null) {
+             return;
+           }
+@@ -3997,12 +3997,12 @@ export class Connection {
+         signatureSubscriptionId = undefined;
+       }
+     };
+-    return {abortConfirmation, confirmationPromise};
++    return { abortConfirmation, confirmationPromise };
+   }
+ 
+   private async confirmTransactionUsingBlockHeightExceedanceStrategy({
+     commitment,
+-    strategy: {abortSignal, lastValidBlockHeight, signature},
++    strategy: { abortSignal, lastValidBlockHeight, signature },
+   }: {
+     commitment?: Commitment;
+     strategy: BlockheightBasedTransactionConfirmationStrategy;
+@@ -4028,11 +4028,11 @@ export class Connection {
+           currentBlockHeight = await checkBlockHeight();
+           if (done) return;
+         }
+-        resolve({__type: TransactionStatus.BLOCKHEIGHT_EXCEEDED});
++        resolve({ __type: TransactionStatus.BLOCKHEIGHT_EXCEEDED });
+       })();
+     });
+-    const {abortConfirmation, confirmationPromise} =
+-      this.getTransactionConfirmationPromise({commitment, signature});
++    const { abortConfirmation, confirmationPromise } =
++      this.getTransactionConfirmationPromise({ commitment, signature });
+     const cancellationPromise = this.getCancellationPromise(abortSignal);
+     let result: RpcResponseAndContext<SignatureResult>;
+     try {
+@@ -4075,7 +4075,7 @@ export class Connection {
+       let lastCheckedSlot: number | null = null;
+       const getCurrentNonceValue = async () => {
+         try {
+-          const {context, value: nonceAccount} = await this.getNonceAndContext(
++          const { context, value: nonceAccount } = await this.getNonceAndContext(
+             nonceAccountPubkey,
+             {
+               commitment,
+@@ -4110,8 +4110,8 @@ export class Connection {
+         }
+       })();
+     });
+-    const {abortConfirmation, confirmationPromise} =
+-      this.getTransactionConfirmationPromise({commitment, signature});
++    const { abortConfirmation, confirmationPromise } =
++      this.getTransactionConfirmationPromise({ commitment, signature });
+     const cancellationPromise = this.getCancellationPromise(abortSignal);
+     let result: RpcResponseAndContext<SignatureResult>;
+     try {
+@@ -4147,7 +4147,7 @@ export class Connection {
+         }
+         if (signatureStatus?.value) {
+           const commitmentForStatus = commitment || 'finalized';
+-          const {confirmationStatus} = signatureStatus.value;
++          const { confirmationStatus } = signatureStatus.value;
+           switch (commitmentForStatus) {
+             case 'processed':
+             case 'recent':
+@@ -4179,11 +4179,11 @@ export class Connection {
+             default:
+               // Exhaustive switch.
+               // eslint-disable-next-line @typescript-eslint/no-unused-vars
+-              ((_: never) => {})(commitmentForStatus);
++              ((_: never) => { })(commitmentForStatus);
+           }
+           result = {
+             context: signatureStatus.context,
+-            value: {err: signatureStatus.value.err},
++            value: { err: signatureStatus.value.err },
+           };
+         } else {
+           throw new TransactionExpiredNonceInvalidError(signature);
+@@ -4224,11 +4224,11 @@ export class Connection {
+         case 'root':
+       }
+       timeoutId = setTimeout(
+-        () => resolve({__type: TransactionStatus.TIMED_OUT, timeoutMs}),
++        () => resolve({ __type: TransactionStatus.TIMED_OUT, timeoutMs }),
+         timeoutMs,
+       );
+     });
+-    const {abortConfirmation, confirmationPromise} =
++    const { abortConfirmation, confirmationPromise } =
+       this.getTransactionConfirmationPromise({
+         commitment,
+         signature,
+@@ -4282,7 +4282,7 @@ export class Connection {
+   async getSlot(
+     commitmentOrConfig?: Commitment | GetSlotConfig,
+   ): Promise<number> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [],
+@@ -4304,7 +4304,7 @@ export class Connection {
+   async getSlotLeader(
+     commitmentOrConfig?: Commitment | GetSlotLeaderConfig,
+   ): Promise<string> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [],
+@@ -4346,13 +4346,13 @@ export class Connection {
+     signature: TransactionSignature,
+     config?: SignatureStatusConfig,
+   ): Promise<RpcResponseAndContext<SignatureStatus | null>> {
+-    const {context, value: values} = await this.getSignatureStatuses(
++    const { context, value: values } = await this.getSignatureStatuses(
+       [signature],
+       config,
+     );
+     assert(values.length === 1);
+     const value = values[0];
+-    return {context, value};
++    return { context, value };
+   }
+ 
+   /**
+@@ -4380,7 +4380,7 @@ export class Connection {
+   async getTransactionCount(
+     commitmentOrConfig?: Commitment | GetTransactionCountConfig,
+   ): Promise<number> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [],
+@@ -4435,7 +4435,7 @@ export class Connection {
+     epoch?: number,
+     commitmentOrConfig?: Commitment | GetInflationRewardConfig,
+   ): Promise<(InflationReward | null)[]> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [addresses.map(pubkey => pubkey.toBase58())],
+@@ -4472,7 +4472,7 @@ export class Connection {
+   async getEpochInfo(
+     commitmentOrConfig?: Commitment | GetEpochInfoConfig,
+   ): Promise<EpochInfo> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [],
+@@ -4555,14 +4555,14 @@ export class Connection {
+   > {
+     const {
+       context,
+-      value: {blockhash},
++      value: { blockhash },
+     } = await this.getLatestBlockhashAndContext(commitment);
+     const feeCalculator = {
+       get lamportsPerSignature(): number {
+         throw new Error(
+           'The capability to fetch `lamportsPerSignature` using the `getRecentBlockhash` API is ' +
+-            'no longer offered by the network. Use the `getFeeForMessage` API to obtain the fee ' +
+-            'for a given message.',
++          'no longer offered by the network. Use the `getFeeForMessage` API to obtain the fee ' +
++          'for a given message.',
+         );
+       },
+       toJSON() {
+@@ -4619,7 +4619,7 @@ export class Connection {
+     if ('error' in res) {
+       throw new SolanaJSONRPCError(res.error, 'failed to get fee calculator');
+     }
+-    const {context, value} = res.result;
++    const { context, value } = res.result;
+     return {
+       context,
+       value: value !== null ? value.feeCalculator : null,
+@@ -4676,7 +4676,7 @@ export class Connection {
+    */
+   async getRecentBlockhash(
+     commitment?: Commitment,
+-  ): Promise<{blockhash: Blockhash; feeCalculator: FeeCalculator}> {
++  ): Promise<{ blockhash: Blockhash; feeCalculator: FeeCalculator }> {
+     try {
+       const res = await this.getRecentBlockhashAndContext(commitment);
+       return res.value;
+@@ -4707,7 +4707,7 @@ export class Connection {
+   async getLatestBlockhashAndContext(
+     commitmentOrConfig?: Commitment | GetLatestBlockhashConfig,
+   ): Promise<RpcResponseAndContext<BlockhashWithExpiryBlockHeight>> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [],
+@@ -4730,7 +4730,7 @@ export class Connection {
+     blockhash: Blockhash,
+     rawConfig?: IsBlockhashValidConfig,
+   ): Promise<RpcResponseAndContext<boolean>> {
+-    const {commitment, config} = extractCommitmentFromConfig(rawConfig);
++    const { commitment, config } = extractCommitmentFromConfig(rawConfig);
+     const args = this._buildArgs(
+       [blockhash],
+       commitment,
+@@ -4790,7 +4790,7 @@ export class Connection {
+   // eslint-disable-next-line no-dupe-class-members
+   async getBlock(
+     slot: number,
+-    rawConfig: GetBlockConfig & {transactionDetails: 'accounts'},
++    rawConfig: GetBlockConfig & { transactionDetails: 'accounts' },
+   ): Promise<AccountsModeBlockResponse | null>;
+ 
+   /**
+@@ -4800,7 +4800,7 @@ export class Connection {
+   // eslint-disable-next-line no-dupe-class-members
+   async getBlock(
+     slot: number,
+-    rawConfig: GetBlockConfig & {transactionDetails: 'none'},
++    rawConfig: GetBlockConfig & { transactionDetails: 'none' },
+   ): Promise<NoneModeBlockResponse | null>;
+ 
+   /**
+@@ -4815,13 +4815,13 @@ export class Connection {
+   // eslint-disable-next-line no-dupe-class-members
+   async getBlock(
+     slot: number,
+-    rawConfig: GetVersionedBlockConfig & {transactionDetails: 'accounts'},
++    rawConfig: GetVersionedBlockConfig & { transactionDetails: 'accounts' },
+   ): Promise<VersionedAccountsModeBlockResponse | null>;
+ 
+   // eslint-disable-next-line no-dupe-class-members
+   async getBlock(
+     slot: number,
+-    rawConfig: GetVersionedBlockConfig & {transactionDetails: 'none'},
++    rawConfig: GetVersionedBlockConfig & { transactionDetails: 'none' },
+   ): Promise<VersionedNoneModeBlockResponse | null>;
+ 
+   /**
+@@ -4837,7 +4837,7 @@ export class Connection {
+     | VersionedNoneModeBlockResponse
+     | null
+   > {
+-    const {commitment, config} = extractCommitmentFromConfig(rawConfig);
++    const { commitment, config } = extractCommitmentFromConfig(rawConfig);
+     const args = this._buildArgsAtLeastConfirmed(
+       [slot],
+       commitment as Finality,
+@@ -4866,24 +4866,24 @@ export class Connection {
+           if ('error' in res) {
+             throw res.error;
+           }
+-          const {result} = res;
++          const { result } = res;
+           return result
+             ? {
+-                ...result,
+-                transactions: result.transactions.map(
+-                  ({transaction, meta, version}) => ({
+-                    meta,
+-                    transaction: {
+-                      ...transaction,
+-                      message: versionedMessageFromResponse(
+-                        version,
+-                        transaction.message,
+-                      ),
+-                    },
+-                    version,
+-                  }),
+-                ),
+-              }
++              ...result,
++              transactions: result.transactions.map(
++                ({ transaction, meta, version }) => ({
++                  meta,
++                  transaction: {
++                    ...transaction,
++                    message: versionedMessageFromResponse(
++                      version,
++                      transaction.message,
++                    ),
++                  },
++                  version,
++                }),
++              ),
++            }
+             : null;
+         }
+       }
+@@ -4906,13 +4906,13 @@ export class Connection {
+   // eslint-disable-next-line no-dupe-class-members
+   async getParsedBlock(
+     slot: number,
+-    rawConfig: GetVersionedBlockConfig & {transactionDetails: 'accounts'},
++    rawConfig: GetVersionedBlockConfig & { transactionDetails: 'accounts' },
+   ): Promise<ParsedAccountsModeBlockResponse>;
+ 
+   // eslint-disable-next-line no-dupe-class-members
+   async getParsedBlock(
+     slot: number,
+-    rawConfig: GetVersionedBlockConfig & {transactionDetails: 'none'},
++    rawConfig: GetVersionedBlockConfig & { transactionDetails: 'none' },
+   ): Promise<ParsedNoneModeBlockResponse>;
+   // eslint-disable-next-line no-dupe-class-members
+   async getParsedBlock(
+@@ -4924,7 +4924,7 @@ export class Connection {
+     | ParsedNoneModeBlockResponse
+     | null
+   > {
+-    const {commitment, config} = extractCommitmentFromConfig(rawConfig);
++    const { commitment, config } = extractCommitmentFromConfig(rawConfig);
+     const args = this._buildArgsAtLeastConfirmed(
+       [slot],
+       commitment as Finality,
+@@ -4965,11 +4965,11 @@ export class Connection {
+    * Returns the current block height of the node
+    */
+   getBlockHeight = (() => {
+-    const requestPromises: {[hash: string]: Promise<number>} = {};
++    const requestPromises: { [hash: string]: Promise<number> } = {};
+     return async (
+       commitmentOrConfig?: Commitment | GetBlockHeightConfig,
+     ): Promise<number> => {
+-      const {commitment, config} =
++      const { commitment, config } =
+         extractCommitmentFromConfig(commitmentOrConfig);
+       const args = this._buildArgs(
+         [],
+@@ -5011,7 +5011,7 @@ export class Connection {
+     if (typeof configOrCommitment === 'string') {
+       commitment = configOrCommitment;
+     } else if (configOrCommitment) {
+-      const {commitment: c, ...rest} = configOrCommitment;
++      const { commitment: c, ...rest } = configOrCommitment;
+       commitment = c;
+       extra = rest;
+     }
+@@ -5058,7 +5058,7 @@ export class Connection {
+     signature: string,
+     rawConfig?: GetVersionedTransactionConfig,
+   ): Promise<VersionedTransactionResponse | null> {
+-    const {commitment, config} = extractCommitmentFromConfig(rawConfig);
++    const { commitment, config } = extractCommitmentFromConfig(rawConfig);
+     const args = this._buildArgsAtLeastConfirmed(
+       [signature],
+       commitment as Finality,
+@@ -5093,7 +5093,7 @@ export class Connection {
+     signature: TransactionSignature,
+     commitmentOrConfig?: GetVersionedTransactionConfig | Finality,
+   ): Promise<ParsedTransactionWithMeta | null> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgsAtLeastConfirmed(
+       [signature],
+@@ -5116,7 +5116,7 @@ export class Connection {
+     signatures: TransactionSignature[],
+     commitmentOrConfig?: GetVersionedTransactionConfig | Finality,
+   ): Promise<(ParsedTransactionWithMeta | null)[]> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const batch = signatures.map(signature => {
+       const args = this._buildArgsAtLeastConfirmed(
+@@ -5177,7 +5177,7 @@ export class Connection {
+     signatures: TransactionSignature[],
+     commitmentOrConfig: GetVersionedTransactionConfig | Finality,
+   ): Promise<(VersionedTransactionResponse | null)[]> {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const batch = signatures.map(signature => {
+       const args = this._buildArgsAtLeastConfirmed(
+@@ -5241,7 +5241,7 @@ export class Connection {
+ 
+     const block = {
+       ...result,
+-      transactions: result.transactions.map(({transaction, meta}) => {
++      transactions: result.transactions.map(({ transaction, meta }) => {
+         const message = new Message(transaction.message);
+         return {
+           meta,
+@@ -5255,7 +5255,7 @@ export class Connection {
+ 
+     return {
+       ...block,
+-      transactions: block.transactions.map(({transaction, meta}) => {
++      transactions: block.transactions.map(({ transaction, meta }) => {
+         return {
+           meta,
+           transaction: Transaction.populate(
+@@ -5569,7 +5569,7 @@ export class Connection {
+     accountKey: PublicKey,
+     config?: GetAccountInfoConfig,
+   ): Promise<RpcResponseAndContext<AddressLookupTableAccount | null>> {
+-    const {context, value: accountInfo} = await this.getAccountInfoAndContext(
++    const { context, value: accountInfo } = await this.getAccountInfoAndContext(
+       accountKey,
+       config,
+     );
+@@ -5595,7 +5595,7 @@ export class Connection {
+     nonceAccount: PublicKey,
+     commitmentOrConfig?: Commitment | GetNonceAndContextConfig,
+   ): Promise<RpcResponseAndContext<NonceAccount | null>> {
+-    const {context, value: accountInfo} = await this.getAccountInfoAndContext(
++    const { context, value: accountInfo } = await this.getAccountInfoAndContext(
+       nonceAccount,
+       commitmentOrConfig,
+     );
+@@ -5623,9 +5623,9 @@ export class Connection {
+       .catch(e => {
+         throw new Error(
+           'failed to get nonce for account ' +
+-            nonceAccount.toBase58() +
+-            ': ' +
+-            e,
++          nonceAccount.toBase58() +
++          ': ' +
++          e,
+         );
+       });
+   }
+@@ -5725,7 +5725,7 @@ export class Connection {
+   async getStakeMinimumDelegation(
+     config?: GetStakeMinimumDelegationConfig,
+   ): Promise<RpcResponseAndContext<number>> {
+-    const {commitment, config: configArg} = extractCommitmentFromConfig(config);
++    const { commitment, config: configArg } = extractCommitmentFromConfig(config);
+     const args = this._buildArgs([], commitment, 'base64', configArg);
+     const unsafeRes = await this._rpcRequest('getStakeMinimumDelegation', args);
+     const res = create(unsafeRes, jsonRpcResultAndContext(number()));
+@@ -5823,7 +5823,7 @@ export class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash =
+           await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+@@ -5961,7 +5961,7 @@ export class Connection {
+       transaction.sign(...signers);
+     } else {
+       let disableCache = this._disableBlockhashCaching;
+-      for (;;) {
++      for (; ;) {
+         const latestBlockhash =
+           await this._blockhashWithExpiryBlockHeight(disableCache);
+         transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+@@ -6015,7 +6015,7 @@ export class Connection {
+     encodedTransaction: string,
+     options?: SendOptions,
+   ): Promise<TransactionSignature> {
+-    const config: any = {encoding: 'base64'};
++    const config: any = { encoding: 'base64' };
+     const skipPreflight = options && options.skipPreflight;
+     const preflightCommitment =
+       skipPreflight === true
+@@ -6065,7 +6065,7 @@ export class Connection {
+         try {
+           await this._rpcWebSocket.notify('ping');
+           // eslint-disable-next-line no-empty
+-        } catch {}
++        } catch { }
+       })();
+     }, 5000);
+     this._updateSubscriptions();
+@@ -6130,7 +6130,7 @@ export class Connection {
+           try {
+             cb(nextSubscription.state);
+             // eslint-disable-next-line no-empty
+-          } catch {}
++          } catch { }
+         });
+       }
+     }
+@@ -6146,7 +6146,7 @@ export class Connection {
+     const hash =
+       this._subscriptionHashByClientSubscriptionId[clientSubscriptionId];
+     if (hash == null) {
+-      return () => {};
++      return () => { };
+     }
+     const stateChangeCallbacks = (this._subscriptionStateChangeCallbacksByHash[
+       hash
+@@ -6238,7 +6238,7 @@ export class Connection {
+               return;
+             }
+             await (async () => {
+-              const {args, method} = subscription;
++              const { args, method } = subscription;
+               try {
+                 this._setSubscription(hash, {
+                   ...subscription,
+@@ -6281,7 +6281,7 @@ export class Connection {
+               // with the server, the client stopped caring about it.
+               // Tear it down now.
+               await (async () => {
+-                const {serverSubscriptionId, unsubscribeMethod} = subscription;
++                const { serverSubscriptionId, unsubscribeMethod } = subscription;
+                 if (
+                   this._subscriptionsAutoDisposedByRpc.has(serverSubscriptionId)
+                 ) {
+@@ -6375,7 +6375,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnAccountNotification(notification: object) {
+-    const {result, subscription} = create(
++    const { result, subscription } = create(
+       notification,
+       AccountNotificationResult,
+     );
+@@ -6475,7 +6475,7 @@ export class Connection {
+     callback: AccountChangeCallback,
+     commitmentOrConfig?: Commitment | AccountSubscriptionConfig,
+   ): ClientSubscriptionId {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [publicKey.toBase58()],
+@@ -6511,7 +6511,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnProgramAccountNotification(notification: Object) {
+-    const {result, subscription} = create(
++    const { result, subscription } = create(
+       notification,
+       ProgramAccountNotificationResult,
+     );
+@@ -6553,7 +6553,7 @@ export class Connection {
+     commitmentOrConfig?: Commitment | ProgramAccountSubscriptionConfig,
+     maybeFilters?: GetProgramAccountsFilter[],
+   ): ClientSubscriptionId {
+-    const {commitment, config} =
++    const { commitment, config } =
+       extractCommitmentFromConfig(commitmentOrConfig);
+     const args = this._buildArgs(
+       [programId.toBase58()],
+@@ -6562,7 +6562,7 @@ export class Connection {
+       config
+         ? config
+         : maybeFilters
+-          ? {filters: applyDefaultMemcmpEncodingToFilters(maybeFilters)}
++          ? { filters: applyDefaultMemcmpEncodingToFilters(maybeFilters) }
+           : undefined /* extra */,
+     );
+     return this._makeSubscription(
+@@ -6598,7 +6598,7 @@ export class Connection {
+     commitment?: Commitment,
+   ): ClientSubscriptionId {
+     const args = this._buildArgs(
+-      [typeof filter === 'object' ? {mentions: [filter.toString()]} : filter],
++      [typeof filter === 'object' ? { mentions: [filter.toString()] } : filter],
+       commitment || this._commitment || 'finalized', // Apply connection/server default.
+     );
+     return this._makeSubscription(
+@@ -6626,7 +6626,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnLogsNotification(notification: Object) {
+-    const {result, subscription} = create(notification, LogsNotificationResult);
++    const { result, subscription } = create(notification, LogsNotificationResult);
+     this._handleServerNotification<LogsCallback>(subscription, [
+       result.value,
+       result.context,
+@@ -6637,7 +6637,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnSlotNotification(notification: Object) {
+-    const {result, subscription} = create(notification, SlotNotificationResult);
++    const { result, subscription } = create(notification, SlotNotificationResult);
+     this._handleServerNotification<SlotChangeCallback>(subscription, [result]);
+   }
+ 
+@@ -6676,7 +6676,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnSlotUpdatesNotification(notification: Object) {
+-    const {result, subscription} = create(
++    const { result, subscription } = create(
+       notification,
+       SlotUpdateNotificationResult,
+     );
+@@ -6725,15 +6725,15 @@ export class Connection {
+   ) {
+     const dispose =
+       this._subscriptionDisposeFunctionsByClientSubscriptionId[
+-        clientSubscriptionId
++      clientSubscriptionId
+       ];
+     if (dispose) {
+       await dispose();
+     } else {
+       console.warn(
+         'Ignored unsubscribe request because an active subscription with id ' +
+-          `\`${clientSubscriptionId}\` for '${subscriptionName}' events ` +
+-          'could not be found.',
++        `\`${clientSubscriptionId}\` for '${subscriptionName}' events ` +
++        'could not be found.',
+       );
+     }
+   }
+@@ -6774,8 +6774,8 @@ export class Connection {
+     if (commitment && !['confirmed', 'finalized'].includes(commitment)) {
+       throw new Error(
+         'Using Connection with default commitment: `' +
+-          this._commitment +
+-          '`, but method requires at least `confirmed`',
++        this._commitment +
++        '`, but method requires at least `confirmed`',
+       );
+     }
+     return this._buildArgs(args, override, encoding, extra);
+@@ -6785,7 +6785,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnSignatureNotification(notification: Object) {
+-    const {result, subscription} = create(
++    const { result, subscription } = create(
+       notification,
+       SignatureNotificationResult,
+     );
+@@ -6808,8 +6808,8 @@ export class Connection {
+     this._handleServerNotification<SignatureSubscriptionCallback>(
+       subscription,
+       result.value === 'receivedSignature'
+-        ? [{type: 'received'}, result.context]
+-        : [{type: 'status', result: result.value}, result.context],
++        ? [{ type: 'received' }, result.context]
++        : [{ type: 'status', result: result.value }, result.context],
+     );
+   }
+ 
+@@ -6868,7 +6868,7 @@ export class Connection {
+     callback: SignatureSubscriptionCallback,
+     options?: SignatureSubscriptionOptions,
+   ): ClientSubscriptionId {
+-    const {commitment, ...extra} = {
++    const { commitment, ...extra } = {
+       ...options,
+       commitment:
+         (options && options.commitment) || this._commitment || 'finalized', // Apply connection/server default.
+@@ -6918,7 +6918,7 @@ export class Connection {
+    * @internal
+    */
+   _wsOnRootNotification(notification: Object) {
+-    const {result, subscription} = create(notification, RootNotificationResult);
++    const { result, subscription } = create(notification, RootNotificationResult);
+     this._handleServerNotification<RootChangeCallback>(subscription, [result]);
+   }
+ 
