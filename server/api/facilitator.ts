@@ -1,6 +1,6 @@
 // server/api/facilitator.ts
 
-import { readBody, eventHandler } from 'h3'
+import { readBody, eventHandler, setResponseStatus } from 'h3'
 import { validateSolanaPayment } from '../utils/solana-facilitator'
 import { validateBaseTransaction } from '../utils/base-facilitator'
 
@@ -19,16 +19,25 @@ export default eventHandler(async (event) => {
             return { allowed: false, error: 'Missing chain field (expected "solana" or "base")' }
         }
 
+        let result
         switch (chain) {
             case 'solana':
-                return await validateSolanaPayment(body)
+                result = await validateSolanaPayment(body)
+                break
 
             case 'base':
-                return await validateBaseTransaction(body)
+                result = await validateBaseTransaction(body)
+                break
 
             default:
-                return { allowed: false, error: `Unsupported chain: ${chain}` }
+                return { allowed: false, error: `Unsupported chain: ${chain} ` }
         }
+
+        if (!result.allowed) {
+            setResponseStatus(event, 402)
+        }
+
+        return result
     } catch (err: any) {
         console.error('FACILITATOR: ❌ Unexpected error:', err)
         return {
