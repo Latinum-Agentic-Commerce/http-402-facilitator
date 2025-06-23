@@ -1,6 +1,6 @@
 # 🔏 HTTP-402 Facilitator
 
-[https://latinum.ai](https://latinum.ai)   
+[https://latinum.ai](https://latinum.ai)
 [Latinum Tutorial](https://latinum.ai/articles/latinum-wallet)
 
 This project provides two stateless validators ("facilitators") for processing cryptographically verifiable payments used by Multi-Agent Commerce Protocol (MCP) tools:
@@ -12,11 +12,10 @@ Both facilitators are exposed via a unified endpoint: `/api/facilitator`.
 
 If you have questions or need help, contact us at [dennj@latinum.ai](mailto:dennj@latinum.ai).
 
-
 ## 📦 Prerequisites
 
-- Node.js `^18.x` or higher ([nvm recommended](https://github.com/nvm-sh/nvm))
-- `npm` or `pnpm`
+* Node.js `^18.x` or higher ([nvm recommended](https://github.com/nvm-sh/nvm))
+* `npm` or `pnpm`
 
 ## 🚀 Install & Run
 
@@ -103,10 +102,23 @@ curl -X POST http://localhost:3000/api/facilitator \
 }
 ```
 
-### 🧪 Example (cURL)
+### 🧪 Example (cURL – Localhost)
 
 ```bash
 curl -X POST http://localhost:3000/api/facilitator \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain": "solana",
+    "signedTransactionB64": "ABC123...",
+    "expectedRecipient": "3BMEwjrn9gBfSetARPrAK1nPTXMRsvQzZLN1n4CYjpcU",
+    "expectedAmountLamports": 50000
+  }'
+```
+
+### 🌐 Example (cURL – Remote Host)
+
+```bash
+curl -X POST https://facilitator.latinum.ai/api/facilitator \
   -H "Content-Type: application/json" \
   -d '{
     "chain": "solana",
