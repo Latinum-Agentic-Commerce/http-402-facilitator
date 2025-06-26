@@ -3,11 +3,13 @@
   "scripts": {
     "build": "nitro build",
     "dev": "nitro dev",
+    "dev-local": "npx nitro dev --host 127.0.0.1",
     "prepare": "nitro prepare",
     "preview": "node .output/server/index.mjs",
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "ethers": "6.14.3",
     "patch-package": "^8.0.0",

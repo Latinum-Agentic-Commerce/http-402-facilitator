@@ -1,6 +1,7 @@
 // utils/solana-facilitator.ts
 
 import { Connection, PublicKey } from '@solana/web3.js'
+import {getAssociatedTokenAddress, getMint} from '@solana/spl-token';
 import base64js from 'base64-js'
 
 const SOLANA_RPC_URLS = {
@@ -54,13 +55,13 @@ async function getTokenLabel(mint: string, connection: Connection): Promise<stri
 export async function validateSolanaPayment({
     signedTransactionB64,
     expectedRecipient,
-    expectedAmountLamports,
+    expectedAmountAtomic,
     mint,
     network,
 }: {
     signedTransactionB64: string
     expectedRecipient: string
-    expectedAmountLamports: number | string
+    expectedAmountAtomic: bigint | number | string
     mint?: string
     network?: 'mainnet' | 'devnet' | 'testnet'
 }): Promise<{ allowed: boolean; txid?: string; error?: string }> {
@@ -71,11 +72,17 @@ export async function validateSolanaPayment({
         // Get token label for better logging and error messages
         const tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
 
+        // Get decimals of token
+        const decimals = mint ? (await getMint(connection, new PublicKey(mint))).decimals : 9
+
         console.log(`[Solana] 📥 Validating payment request for ${tokenLabel} (${mint || 'SOL'}) on ${networkName}`)
 
-        if (!signedTransactionB64 || !expectedRecipient || !expectedAmountLamports) {
-            const tokenDisplay = mint ? ` ${tokenLabel}` : ' lamports'
-            return { allowed: false, error: `💳 Payment required: ${expectedAmountLamports}${tokenDisplay} to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+        if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
+            expectedAmountAtomic = expectedAmountAtomic ?? 0
+            const amount = BigInt(expectedAmountAtomic);
+            const uiAmount = Number(amount) / 10 ** decimals;
+            const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
+            return { allowed: false, error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
         }
 
         const txBytes = base64js.toByteArray(signedTransactionB64)
@@ -106,8 +113,9 @@ export async function validateSolanaPayment({
             return { allowed: false, error: 'Could not parse transaction' }
         }
 
-        const expectedLamports = BigInt(expectedAmountLamports)
+        const expectedAmount = BigInt(expectedAmountAtomic)
 
+        const expectedRecipientAddress = mint ? (await getAssociatedTokenAddress(new PublicKey(mint), new PublicKey(expectedRecipient))).toString() : expectedRecipient
         const validTransfer = parsed.transaction.message.instructions.some((ix: any) => {
             if (!mint) {
                 // Native SOL transfer via system program
@@ -116,7 +124,7 @@ export async function validateSolanaPayment({
                 const recipientPubkey = ix.parsed.info.destination
                 const lamports = BigInt(ix.parsed.info.lamports)
 
-                return recipientPubkey === expectedRecipient && lamports === expectedLamports
+                return recipientPubkey === expectedRecipientAddress && lamports === expectedAmount
             } else {
                 // SPL Token transfer - mint address is required
                 if (ix.program !== 'spl-token') return false
@@ -131,7 +139,7 @@ export async function validateSolanaPayment({
                         return false
                     }
 
-                    return recipientPubkey === expectedRecipient && amount === expectedLamports
+                    return recipientPubkey === expectedRecipientAddress && amount === expectedAmount
                 }
 
                 // Handle transferChecked instruction (includes mint verification)
@@ -145,7 +153,7 @@ export async function validateSolanaPayment({
                         return false
                     }
 
-                    return recipientPubkey === expectedRecipient && amount === expectedLamports
+                    return recipientPubkey === expectedRecipientAddress && amount === expectedAmount
                 }
 
                 return false
