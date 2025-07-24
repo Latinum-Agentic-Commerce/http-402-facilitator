@@ -1,7 +1,7 @@
 // utils/solana-facilitator.ts
 
-import { Connection, PublicKey } from '@solana/web3.js'
-import {getAssociatedTokenAddress, getMint} from '@solana/spl-token';
+import { Connection, PublicKey, VersionedTransaction, Transaction } from '@solana/web3.js'
+import { getAssociatedTokenAddress, getMint } from '@solana/spl-token';
 import base64js from 'base64-js'
 
 const SOLANA_RPC_URLS = {
@@ -30,19 +30,19 @@ async function getTokenLabel(mint: string, connection: Connection): Promise<stri
     if (KNOWN_TOKENS[mint]) {
         return KNOWN_TOKENS[mint]
     }
-    
+
     try {
         // Try to fetch token metadata from the mint account
         const mintPublicKey = new PublicKey(mint)
         const mintInfo = await connection.getParsedAccountInfo(mintPublicKey)
-        
+
         if (mintInfo.value?.data && 'parsed' in mintInfo.value.data) {
             const parsed = mintInfo.value.data.parsed
             if (parsed.info?.symbol) {
                 return parsed.info.symbol
             }
         }
-        
+
         // Fallback: try to get metadata from SPL Token Metadata program (if available)
         // This would require additional metadata program calls, but for now return mint address
         return mint.slice(0, 8) + '...' // Shortened mint address
@@ -68,7 +68,7 @@ export async function validateSolanaPayment({
     try {
         const networkName = network || "mainnet"
         const connection = getConnection(networkName)
-        
+
         // Get token label for better logging and error messages
         const tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
 
@@ -77,21 +77,73 @@ export async function validateSolanaPayment({
 
         console.log(`[Solana] 📥 Validating payment request for ${tokenLabel} (${mint || 'SOL'}) on ${networkName}`)
 
-        if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
+        let txBytes
+        try {
+            if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
+                throw new Error('missing_params')
+            }
+            txBytes = base64js.toByteArray(signedTransactionB64)
+
+            // Validate transaction format before sending
+            try {
+                // Try to deserialize as versioned transaction first
+                VersionedTransaction.deserialize(txBytes)
+                console.log('[Solana] 📋 Transaction is versioned format')
+            } catch (versionedErr) {
+                try {
+                    // Fall back to legacy transaction format  
+                    Transaction.from(txBytes)
+                    console.log('[Solana] 📋 Transaction is legacy format')
+                } catch (legacyErr) {
+                    console.error('[Solana] ❌ Transaction deserialization failed:', {
+                        versioned: versionedErr.message,
+                        legacy: legacyErr.message,
+                        bytesLength: txBytes.length
+                    })
+                    throw new Error(`Invalid transaction format. Versioned error: ${versionedErr.message}. Legacy error: ${legacyErr.message}`)
+                }
+            }
+        } catch (err) {
             expectedAmountAtomic = expectedAmountAtomic ?? 0
+            console.log(expectedAmountAtomic)
+
             const amount = BigInt(expectedAmountAtomic);
+            console.log(amount)
+
             const uiAmount = Number(amount) / 10 ** decimals;
+            console.log(uiAmount)
+
             const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
             return { allowed: false, error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
         }
 
-        const txBytes = base64js.toByteArray(signedTransactionB64)
-
         console.log(`[Solana] 🚀 Sending transaction to Solana ${networkName}...`)
-        const txid = await connection.sendRawTransaction(txBytes, {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-        })
+        let txid: string
+        try {
+            // Additional logging for debugging
+            console.log('[Solana] 🔍 Transaction bytes length:', txBytes.length)
+            console.log('[Solana] 🔍 First 20 bytes:', Array.from(txBytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '))
+
+            txid = await connection.sendRawTransaction(txBytes, {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed',
+                maxRetries: 3
+            })
+        } catch (sendError: any) {
+            // Handle SendTransactionError and get full details
+            console.error('[Solana] ❌ SendTransactionError details:')
+            console.error('  Message:', sendError.message)
+            console.error('  Transaction message:', sendError.transactionMessage)
+            console.error('  Signature:', sendError.signature)
+
+            if (sendError && typeof sendError.getLogs === 'function') {
+                console.error('[Solana] 🔍 Transaction logs:', await sendError.getLogs())
+            }
+            console.error('[Solana] 💥 Raw transaction bytes length:', txBytes.length)
+
+            // Re-throw with more context
+            throw new Error(`Transaction send failed: ${sendError.message}. Transaction message: ${sendError.transactionMessage}`)
+        }
 
         console.log('[Solana] ⏳ Waiting for confirmation...')
         const latest = await connection.getLatestBlockhash('finalized')
