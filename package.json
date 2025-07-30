@@ -13,7 +13,8 @@
     "@solana/web3.js": "^1.98.2",
     "ethers": "6.15.0",
     "patch-package": "^8.0.0",
-    "postinstall-postinstall": "^2.1.0"
+    "postinstall-postinstall": "^2.1.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "nitropack": "latest"
