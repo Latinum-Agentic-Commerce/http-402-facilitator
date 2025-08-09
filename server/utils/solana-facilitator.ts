@@ -1,10 +1,9 @@
 // utils/solana-facilitator.ts
 
-import {Connection, MessageV0, PublicKey, VersionedTransaction} from '@solana/web3.js'
-import {getAssociatedTokenAddress, getMint} from '@solana/spl-token';
+import { Connection, PublicKey, VersionedTransaction, Transaction, Keypair } from '@solana/web3.js'
+import { getAssociatedTokenAddress, getMint } from '@solana/spl-token';
 import base64js from 'base64-js'
-import {getSolanaFeePayerKeypair} from "~/constants";
-import nacl from "tweetnacl";
+import { getSolanaFeePayerKeypair } from '~/constants';
 
 const SOLANA_RPC_URLS = {
     mainnet: 'https://api.mainnet-beta.solana.com',
@@ -54,10 +53,6 @@ async function getTokenLabel(mint: string, connection: Connection): Promise<stri
     }
 }
 
-function padBase64(str: string): string {
-    return str + '='.repeat((4 - str.length % 4) % 4);
-}
-
 export async function validateSolanaPayment({
     signedTransactionB64,
     expectedRecipient,
@@ -74,73 +69,64 @@ export async function validateSolanaPayment({
     try {
         const networkName = network || "mainnet"
         const connection = getConnection(networkName)
-        const feePayerKeypair = getSolanaFeePayerKeypair()
-        // Get token label for better logging and error messages
-        const tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
 
-        // Get decimals of token
-        // const decimals = mint ? (await getMint(connection, new PublicKey(mint))).decimals : 9
-        const decimals = 6
+        const tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
+        const decimals = mint ? (await getMint(connection, new PublicKey(mint))).decimals : 9
+
+        const feePayerKeypair = getSolanaFeePayerKeypair()
 
         console.log(`[Solana] 📥 Validating payment request for ${tokenLabel} (${mint || 'SOL'}) on ${networkName}`)
-        console.log("signedTransactionB64 ", signedTransactionB64)
 
-        let versionedTx: VersionedTransaction
+        let txBytes
         try {
             if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
                 throw new Error('missing_params')
             }
+            txBytes = base64js.toByteArray(signedTransactionB64)
 
-            // extract message and user signature from payload
-            const [userPubkey, messageB64, signatureB64] = signedTransactionB64.split("::");
-            if (!messageB64 || !signatureB64 || !userPubkey) {
-                throw new Error("Invalid combined payload");
-            }
-            const messageBytes = base64js.toByteArray(messageB64);
-            const userSignatureBytes = base64js.toByteArray(signatureB64);
-
-            // Validate transaction format before sending
+            // Try to deserialize as versioned transaction first
+            let versionedTx: VersionedTransaction | null = null
             try {
-                // 1. Recreate the MessageV0 object
-                const message = MessageV0.deserialize(messageBytes);
-
-                // 2. Construct a VersionedTransaction from message
-                versionedTx = new VersionedTransaction(message);
-
-                // 3. Add user signature to transaction
-                versionedTx.addSignature(new PublicKey(userPubkey), userSignatureBytes)
-                versionedTx.addSignature(feePayerKeypair.publicKey, nacl.sign.detached(
-                    messageBytes,
-                    feePayerKeypair.secretKey
-                ))
+                versionedTx = VersionedTransaction.deserialize(txBytes)
                 console.log('[Solana] 📋 Transaction is versioned format')
+
+                versionedTx.sign([feePayerKeypair])
+                txBytes = versionedTx.serialize()
+                console.log('[Solana] 🖊️ Fee payer signature added (gasless mode)')
             } catch (versionedErr) {
-                throw new Error('Invalid or unsupported transaction format; expected versioned transaction.')
+                try {
+                    const legacyTx = Transaction.from(txBytes)
+                    console.log('[Solana] 📋 Transaction is legacy format')
+
+                    if (feePayerKeypair) {
+                        legacyTx.sign(feePayerKeypair)
+                        txBytes = legacyTx.serialize()
+                        console.log('[Solana] 🖊️ Fee payer signature added (gasless mode)')
+                    }
+                } catch (legacyErr) {
+                    console.error('[Solana] ❌ Transaction deserialization failed:', {
+                        versioned: versionedErr.message,
+                        legacy: legacyErr.message,
+                        bytesLength: txBytes.length
+                    })
+                    throw new Error(`Invalid transaction format. Versioned error: ${versionedErr.message}. Legacy error: ${legacyErr.message}`)
+                }
             }
         } catch (err) {
             expectedAmountAtomic = expectedAmountAtomic ?? 0
-            console.log(expectedAmountAtomic)
-
             const amount = BigInt(expectedAmountAtomic);
-            console.log(amount)
-
             const uiAmount = Number(amount) / 10 ** decimals;
-            console.log(uiAmount)
-
             const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
             return { allowed: false, error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
         }
 
-        const signedTxBytes = versionedTx.serialize()
-
         console.log(`[Solana] 🚀 Sending transaction to Solana ${networkName}...`)
         let txid: string
         try {
-            // Additional logging for debugging
-            console.log('[Solana] 🔍 Transaction bytes length:', signedTxBytes.length)
-            console.log('[Solana] 🔍 First 20 bytes:', Array.from(signedTxBytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '))
+            console.log('[Solana] 🔍 Transaction bytes length:', txBytes.length)
+            console.log('[Solana] 🔍 First 20 bytes:', Array.from(txBytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '))
 
-            txid = await connection.sendRawTransaction(signedTxBytes, {
+            txid = await connection.sendRawTransaction(txBytes, {
                 skipPreflight: false,
                 preflightCommitment: 'confirmed',
                 maxRetries: 3
@@ -155,7 +141,7 @@ export async function validateSolanaPayment({
             if (sendError && typeof sendError.getLogs === 'function') {
                 console.error('[Solana] 🔍 Transaction logs:', await sendError.getLogs())
             }
-            console.error('[Solana] 💥 Raw transaction bytes length:', signedTxBytes.length)
+            console.error('[Solana] 💥 Raw transaction bytes length:', txBytes.length)
 
             // Re-throw with more context
             throw new Error(`Transaction send failed: ${sendError.message}. Transaction message: ${sendError.transactionMessage}`)
