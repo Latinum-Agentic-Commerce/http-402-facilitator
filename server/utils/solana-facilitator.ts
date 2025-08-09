@@ -65,111 +65,99 @@ export async function validateSolanaPayment({
     expectedAmountAtomic: bigint | number | string
     mint?: string
     network?: 'mainnet' | 'devnet' | 'testnet'
-}): Promise<{ allowed: boolean; txid?: string; error?: string }> {
+}): Promise<{ allowed: boolean; txid?: string; error?: string; debug_notes?: string[] }> {
+    const debug_notes: string[] = []
     try {
         const networkName = network || "mainnet"
+        debug_notes.push(`Network: ${networkName}`)
         const connection = getConnection(networkName)
 
         const tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
+        debug_notes.push(`Token: ${tokenLabel} (${mint || 'SOL'})`)
+
         const decimals = mint ? (await getMint(connection, new PublicKey(mint))).decimals : 9
+        debug_notes.push(`Token decimals: ${decimals}`)
 
         const feePayerKeypair = getSolanaFeePayerKeypair()
 
-        console.log(`[Solana] 📥 Validating payment request for ${tokenLabel} (${mint || 'SOL'}) on ${networkName}`)
+        debug_notes.push(`Fee payer public key: ${feePayerKeypair.publicKey.toBase58()}`)
 
         let txBytes
         try {
             if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
+                debug_notes.push('❌ Missing parameters')
                 throw new Error('missing_params')
             }
             txBytes = base64js.toByteArray(signedTransactionB64)
+            debug_notes.push(`Transaction bytes length: ${txBytes.length}`)
 
             // Try to deserialize as versioned transaction first
             let versionedTx: VersionedTransaction | null = null
             try {
                 versionedTx = VersionedTransaction.deserialize(txBytes)
-                console.log('[Solana] 📋 Transaction is versioned format')
-
+                debug_notes.push('📋 Transaction is versioned format')
                 versionedTx.sign([feePayerKeypair])
                 txBytes = versionedTx.serialize()
-                console.log('[Solana] 🖊️ Fee payer signature added (gasless mode)')
+                debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
             } catch (versionedErr) {
                 try {
                     const legacyTx = Transaction.from(txBytes)
-                    console.log('[Solana] 📋 Transaction is legacy format')
-
-                    if (feePayerKeypair) {
-                        legacyTx.sign(feePayerKeypair)
-                        txBytes = legacyTx.serialize()
-                        console.log('[Solana] 🖊️ Fee payer signature added (gasless mode)')
-                    }
+                    debug_notes.push('📋 Transaction is legacy format')
+                    legacyTx.sign(feePayerKeypair)
+                    txBytes = legacyTx.serialize()
+                    debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
                 } catch (legacyErr) {
-                    console.error('[Solana] ❌ Transaction deserialization failed:', {
-                        versioned: versionedErr.message,
-                        legacy: legacyErr.message,
-                        bytesLength: txBytes.length
-                    })
+                    debug_notes.push(`❌ Transaction deserialization failed: Versioned error: ${versionedErr.message}, Legacy error: ${legacyErr.message}`)
                     throw new Error(`Invalid transaction format. Versioned error: ${versionedErr.message}. Legacy error: ${legacyErr.message}`)
                 }
             }
         } catch (err) {
-            expectedAmountAtomic = expectedAmountAtomic ?? 0
-            const amount = BigInt(expectedAmountAtomic);
+            const amount = BigInt(expectedAmountAtomic ?? 0);
             const uiAmount = Number(amount) / 10 ** decimals;
             const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
-            return { allowed: false, error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+            return { allowed: false, error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}`, debug_notes }
         }
 
-        console.log(`[Solana] 🚀 Sending transaction to Solana ${networkName}...`)
+        debug_notes.push('🚀 Sending transaction...')
         let txid: string
         try {
-            console.log('[Solana] 🔍 Transaction bytes length:', txBytes.length)
-            console.log('[Solana] 🔍 First 20 bytes:', Array.from(txBytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '))
-
             txid = await connection.sendRawTransaction(txBytes, {
                 skipPreflight: false,
                 preflightCommitment: 'confirmed',
                 maxRetries: 3
             })
+            debug_notes.push(`✅ Sent transaction. TXID: ${txid}`)
         } catch (sendError: any) {
-            // Handle SendTransactionError and get full details
-            console.error('[Solana] ❌ SendTransactionError details:')
-            console.error('  Message:', sendError.message)
-            console.error('  Transaction message:', sendError.transactionMessage)
-            console.error('  Signature:', sendError.signature)
-
-            if (sendError && typeof sendError.getLogs === 'function') {
-                console.error('[Solana] 🔍 Transaction logs:', await sendError.getLogs())
+            debug_notes.push(`❌ SendTransactionError: ${sendError.message}`)
+            if (typeof sendError.getLogs === 'function') {
+                const logs = await sendError.getLogs()
+                logs.forEach((log: string) => debug_notes.push(`RPC log: ${log}`))
             }
-            console.error('[Solana] 💥 Raw transaction bytes length:', txBytes.length)
-
-            // Re-throw with more context
-            throw new Error(`Transaction send failed: ${sendError.message}. Transaction message: ${sendError.transactionMessage}`)
+            throw new Error(`Transaction send failed: ${sendError.message}`)
         }
 
-        console.log('[Solana] ⏳ Waiting for confirmation...')
+        debug_notes.push('⏳ Waiting for confirmation...')
         const latest = await connection.getLatestBlockhash('finalized')
         await connection.confirmTransaction(
-            {
-                signature: txid,
-                blockhash: latest.blockhash,
-                lastValidBlockHeight: latest.lastValidBlockHeight,
-            },
+            { signature: txid, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
             'confirmed'
         )
+        debug_notes.push('✅ Transaction confirmed')
 
-        console.log('[Solana] 🔎 Parsing transaction...')
         const parsed = await connection.getParsedTransaction(txid, {
             maxSupportedTransactionVersion: 0,
         })
 
         if (!parsed || !parsed.transaction?.message?.instructions?.length) {
-            return { allowed: false, error: 'Could not parse transaction' }
+            debug_notes.push('❌ Could not parse transaction')
+            return { allowed: false, error: 'Could not parse transaction', debug_notes }
         }
 
         const expectedAmount = BigInt(expectedAmountAtomic)
+        const expectedRecipientAddress = mint
+            ? (await getAssociatedTokenAddress(new PublicKey(mint), new PublicKey(expectedRecipient))).toString()
+            : expectedRecipient
 
-        const expectedRecipientAddress = mint ? (await getAssociatedTokenAddress(new PublicKey(mint), new PublicKey(expectedRecipient))).toString() : expectedRecipient
         const validTransfer = parsed.transaction.message.instructions.some((ix: any) => {
             if (!mint) {
                 // Native SOL transfer via system program
@@ -215,13 +203,14 @@ export async function validateSolanaPayment({
         })
 
         if (!validTransfer) {
-            return { allowed: false, error: 'Transfer mismatch or invalid format' }
+            debug_notes.push('❌ Transfer mismatch or invalid format')
+            return { allowed: false, error: 'Transfer mismatch or invalid format', debug_notes }
         }
 
-        console.log('[Solana] ✅ Transaction valid:', txid)
-        return { allowed: true, txid }
+        debug_notes.push('✅ Transaction valid')
+        return { allowed: true, txid, debug_notes }
     } catch (err: any) {
-        console.error('[Solana] ❌ Validation error:', err)
-        return { allowed: false, error: err.message || 'Internal error' }
+        debug_notes.push(`❌ Validation error: ${err.message}`)
+        return { allowed: false, error: err.message || 'Internal error', debug_notes }
     }
 }
