@@ -67,26 +67,28 @@ export async function validateSolanaPayment({
     network?: 'mainnet' | 'devnet' | 'testnet'
 }): Promise<{ status: 'success' | 'payment_required' | 'failure'; txid?: string; error?: string; debug_notes?: string[]; user_pubkey?: string; token_label?: string }> {
     const debug_notes: string[] = []
+    const log = (msg: string) => debug_notes.push(msg)
+
     let userPubkey: string | undefined
     let tokenLabel: string
     try {
         const networkName = network || "mainnet"
-        debug_notes.push(`Network: ${networkName}`)
+        log(`Network: ${networkName}`)
         const connection = getConnection(networkName)
 
         tokenLabel = mint ? await getTokenLabel(mint, connection) : 'native SOL'
-        debug_notes.push(`Token: ${tokenLabel} (${mint || 'SOL'})`)
+        log(`Token: ${tokenLabel} (${mint || 'SOL'})`)
 
         const decimals = mint ? (await getMint(connection, new PublicKey(mint))).decimals : 9
-        debug_notes.push(`Token decimals: ${decimals}`)
+        log(`Token decimals: ${decimals}`)
 
         const feePayerKeypair = getSolanaFeePayerKeypair()
 
-        debug_notes.push(`Fee payer public key: ${feePayerKeypair.publicKey.toBase58()}`)
+        log(`Fee payer public key: ${feePayerKeypair.publicKey.toBase58()}`)
 
         if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
-            debug_notes.push('❌ Missing parameters')
-            const amount = BigInt(expectedAmountAtomic ?? 0);
+            log('❌ Missing parameters')
+            const amount = BigInt(expectedAmountAtomic);
             const uiAmount = Number(amount) / 10 ** decimals;
             const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
             return {
@@ -100,35 +102,35 @@ export async function validateSolanaPayment({
 
         // ── Decode and try to deserialize (versioned → fallback to legacy)
         let txBytes = base64js.toByteArray(signedTransactionB64)
-        debug_notes.push(`Transaction bytes length: ${txBytes.length}`)
+        log(`Transaction bytes length: ${txBytes.length}`)
 
         // Try to deserialize as versioned transaction first
         let versionedTx: VersionedTransaction | null = null
         try {
             versionedTx = VersionedTransaction.deserialize(txBytes)
-            debug_notes.push('📋 Transaction is versioned format')
+            log('📋 Transaction is versioned format')
             // Extract the first signer (user's pubkey) before adding fee payer signature
             if (versionedTx.message.staticAccountKeys.length > 0) {
                 userPubkey = versionedTx.message.staticAccountKeys[0].toBase58()
-                debug_notes.push(`👤 User pubkey: ${userPubkey}`)
+                log(`👤 User pubkey: ${userPubkey}`)
             }
             versionedTx.sign([feePayerKeypair])
             txBytes = versionedTx.serialize()
-            debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
+            log('🖊️ Fee payer signature added (gasless mode)')
         } catch (versionedErr) {
             try {
                 const legacyTx = Transaction.from(txBytes)
-                debug_notes.push('📋 Transaction is legacy format')
+                log('📋 Transaction is legacy format')
                 // Extract the first signer (user's pubkey) before adding fee payer signature
                 if (legacyTx.instructions.length > 0 && legacyTx.instructions[0].keys.length > 0) {
                     userPubkey = legacyTx.instructions[0].keys[0].pubkey.toBase58()
-                    debug_notes.push(`👤 User pubkey: ${userPubkey}`)
+                    log(`👤 User pubkey: ${userPubkey}`)
                 }
                 legacyTx.sign(feePayerKeypair)
                 txBytes = legacyTx.serialize()
-                debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
+                log('🖊️ Fee payer signature added (gasless mode)')
             } catch (legacyErr: any) {
-                debug_notes.push(`❌ Transaction deserialization failed: Versioned error: ${versionedErr?.message}, Legacy error: ${legacyErr?.message}`)
+                log(`❌ Transaction deserialization failed: Versioned error: ${versionedErr?.message}, Legacy error: ${legacyErr?.message}`)
                 return {
                     status: 'payment_required',
                     debug_notes,
@@ -138,7 +140,7 @@ export async function validateSolanaPayment({
             }
         }
 
-        debug_notes.push('🚀 Sending transaction...')
+        log('🚀 Sending transaction...')
         let txid: string
         try {
             txid = await connection.sendRawTransaction(txBytes, {
@@ -146,12 +148,12 @@ export async function validateSolanaPayment({
                 preflightCommitment: 'confirmed',
                 maxRetries: 3
             })
-            debug_notes.push(`✅ Sent transaction. TXID: ${txid}`)
+            log(`✅ Sent transaction. TXID: ${txid}`)
         } catch (sendError: any) {
-            debug_notes.push(`❌ SendTransactionError: ${sendError.message}`)
+            log(`❌ SendTransactionError: ${sendError.message}`)
             if (typeof sendError.getLogs === 'function') {
                 const logs = await sendError.getLogs()
-                logs.forEach((log: string) => debug_notes.push(`RPC log: ${log}`))
+                logs.forEach((log: string) => log(`RPC log: ${log}`))
             }
             return {
                 status: 'failure',
@@ -162,20 +164,22 @@ export async function validateSolanaPayment({
             }
         }
 
-        debug_notes.push('⏳ Waiting for confirmation...')
+        log('⏳ Waiting for confirmation...')
         const latest = await connection.getLatestBlockhash('finalized')
         await connection.confirmTransaction(
             { signature: txid, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
             'confirmed'
         )
-        debug_notes.push('✅ Transaction confirmed')
+        log('✅ Transaction confirmed')
 
         const parsed = await connection.getParsedTransaction(txid, {
             maxSupportedTransactionVersion: 0,
         })
 
+        connection.sendAndConfirmRawTransaction()
+
         if (!parsed || !parsed.transaction?.message?.instructions?.length) {
-            debug_notes.push('❌ Could not parse transaction')
+            log('❌ Could not parse transaction')
             return {
                 status: 'failure',
                 debug_notes,
@@ -235,7 +239,7 @@ export async function validateSolanaPayment({
         })
 
         if (!validTransfer) {
-            debug_notes.push('❌ Transfer mismatch or invalid format')
+            log('❌ Transfer mismatch or invalid format')
             return {
                 status: 'failure',
                 debug_notes,
@@ -245,7 +249,7 @@ export async function validateSolanaPayment({
             }
         }
 
-        debug_notes.push('✅ Transaction valid')
+        log('✅ Transaction valid')
         return {
             status: 'success',
             txid,
@@ -254,7 +258,7 @@ export async function validateSolanaPayment({
             token_label: tokenLabel
         }
     } catch (err: any) {
-        debug_notes.push(`❌ Validation error: ${err.message}`)
+        log(`❌ Validation error: ${err.message}`)
         return {
             status: 'failure',
             debug_notes,
