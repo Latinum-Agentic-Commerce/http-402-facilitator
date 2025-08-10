@@ -9,12 +9,15 @@ export async function validateBaseTransaction({
     signedTransactionHex,
     expectedRecipient,
     expectedAmountWei
-}): Promise<{ allowed: boolean; txHash?: string; type?: 'eth' | 'token'; error?: string }> {
+}): Promise<{ status: 'success' | 'payment_required' | 'failure'; txHash?: string; type?: 'eth' | 'token'; error?: string }> {
     try {
         const provider = new ethers.JsonRpcProvider(BASE_RPC_URL)
 
         if (!ethers.isAddress(expectedRecipient)) {
-            return { allowed: false, error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+            return { 
+                status: 'payment_required',
+                error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` 
+            }
         }
 
         const txResponse = await provider.broadcastTransaction(signedTransactionHex)
@@ -23,12 +26,18 @@ export async function validateBaseTransaction({
         const receipt = await txResponse.wait(CONFIRMATIONS)
 
         if (!receipt || receipt.status !== 1) {
-            return { allowed: false, error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+            return { 
+                status: 'failure',
+                error: `Transaction failed or was reverted` 
+            }
         }
 
         const tx = await provider.getTransaction(txHash)
         if (!tx) {
-            return { allowed: false, error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+            return { 
+                status: 'failure',
+                error: `Could not retrieve transaction details` 
+            }
         }
 
         const expectedAmount = BigInt(expectedAmountWei)
@@ -60,16 +69,23 @@ export async function validateBaseTransaction({
             })
 
             if (validTokenTransfer) {
-                return { allowed: true, txHash, type: 'token' }
+                return { status: 'success', txHash, type: 'token' }
             }
         }
 
         if (!isValidTransfer) {
-            return { allowed: false, error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+            return { 
+                status: 'payment_required',
+                error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` 
+            }
         }
 
-        return { allowed: true, txHash, type: 'eth' }
+        return { status: 'success', txHash, type: 'eth' }
     } catch (err: any) {
-        return { allowed: false, error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` }
+        // Most catch errors are because no transaction was provided (payment required)
+        return { 
+            status: 'payment_required',
+            error: `💳 Payment required: ${expectedAmountWei} wei to ${expectedRecipient}. Please provide a signed transaction. If you don't have a wallet, try Latinum MCP Wallet at https://pypi.org/project/latinum-wallet-mcp. Instructions in: https://latinum.ai/articles/latinum-wallet` 
+        }
     }
 }

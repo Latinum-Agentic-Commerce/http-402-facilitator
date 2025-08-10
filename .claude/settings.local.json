@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npm install)",
       "Bash(ls:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx nuxt:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(pkill:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

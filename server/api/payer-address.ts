@@ -1,6 +1,6 @@
 // server/api/payer-address.ts
 
-import {getSolanaFeePayerKeypair} from '~/constants'
+import {getSolanaFeePayerKeypair} from '../constants'
 
 export default defineEventHandler((event) => {
     // Disable caching

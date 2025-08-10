@@ -3,6 +3,7 @@
 import { readBody, eventHandler, setResponseStatus } from 'h3'
 import { validateSolanaPayment } from '../utils/solana-facilitator'
 import { validateBaseTransaction } from '../utils/base-facilitator'
+import { supabase } from '../constants'
 
 export const config = {
     runtime: 'nodejs',
@@ -16,13 +17,28 @@ export default eventHandler(async (event) => {
         const chain = body?.chain?.toLowerCase()
 
         if (!chain) {
-            return { allowed: false, error: 'Missing chain field (expected "solana" or "base")' }
+            return { status: 'failure', error: 'Missing chain field (expected "solana" or "base")' }
         }
 
         let result
         switch (chain) {
             case 'solana':
                 result = await validateSolanaPayment(body)
+
+                await supabase.from('solana_tx_attempts').insert({
+                    network: body?.network || null,
+                    signed_transaction_b64: body?.signedTransactionB64 ?? null,
+                    recipient: body?.expectedRecipient ?? null,
+                    amount_atomic: body?.expectedAmountAtomic?.toString() ?? null,
+                    mint_address: body?.mint ?? null,
+                    token_label: result?.token_label ?? null,
+                    user_pubkey: result?.user_pubkey ?? null,
+                    status: result?.status || 'failure',
+                    txid: result?.txid ?? null,
+                    validation_error: result?.error ?? null,
+                    debug_logs: result?.debug_notes ?? []
+                })
+
                 break
 
             case 'base':
@@ -30,10 +46,10 @@ export default eventHandler(async (event) => {
                 break
 
             default:
-                return { allowed: false, error: `Unsupported chain: ${chain} ` }
+                return { status: 'failure', error: `Unsupported chain: ${chain} ` }
         }
 
-        if (!result.allowed) {
+        if (result.status !== 'success') {
             setResponseStatus(event, 402)
         }
 
@@ -41,7 +57,7 @@ export default eventHandler(async (event) => {
     } catch (err: any) {
         console.error('FACILITATOR: ❌ Unexpected error:', err)
         return {
-            allowed: false,
+            status: 'failure',
             error: err?.message || 'Internal Server Error',
         }
     }
