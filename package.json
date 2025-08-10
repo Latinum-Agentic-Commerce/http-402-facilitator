@@ -1,11 +1,11 @@
 {
   "private": true,
   "scripts": {
-    "build": "nitro build",
-    "dev": "nitro dev",
-    "dev-local": "npx nitro dev --host 127.0.0.1",
-    "prepare": "nitro prepare",
-    "preview": "node .output/server/index.mjs",
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "dev-local": "nuxt dev --host 127.0.0.1",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
     "postinstall": "patch-package"
   },
   "dependencies": {
