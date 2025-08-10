@@ -62,9 +62,33 @@
             <!-- Logs Table -->
             <div v-else class="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-700/50">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-semibold text-white">Recent Transactions</h2>
-                        <span class="text-sm text-gray-400">{{ data?.logs?.length }} entries</span>
+                        <span class="text-sm text-gray-400">{{ filteredLogs.length }} of {{ data?.logs?.length }} entries</span>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <input
+                            v-model="searchTerm"
+                            type="text"
+                            placeholder="Search by wallet address, recipient, or transaction ID..."
+                            class="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <button
+                            v-if="searchTerm"
+                            @click="searchTerm = ''"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -93,7 +117,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-700/50">
-                            <template v-for="log in data?.logs" :key="log.id">
+                            <template v-for="log in filteredLogs" :key="log.id">
                                 <!-- Main Log Row -->
                                 <tr class="hover:bg-gray-700/30 transition-colors duration-200">
                                     <!-- Status -->
@@ -272,6 +296,25 @@
 <script setup lang="ts">
 // Reactive state for expanded log details
 const expandedLogs = ref(new Set<string>())
+
+// Search functionality
+const searchTerm = ref('')
+
+// Filtered logs based on search term
+const filteredLogs = computed(() => {
+    const logs = data.value?.logs || []
+    if (!searchTerm.value.trim()) return logs
+    
+    const search = searchTerm.value.toLowerCase().trim()
+    return logs.filter(log => 
+        // Search in user wallet address
+        log.user_pubkey?.toLowerCase().includes(search) ||
+        // Search in recipient address
+        log.recipient?.toLowerCase().includes(search) ||
+        // Search in transaction ID
+        log.txid?.toLowerCase().includes(search)
+    )
+})
 
 // Data fetching
 const { data, pending, error, refresh } = await $fetch('/api/logs').then(response => ({
