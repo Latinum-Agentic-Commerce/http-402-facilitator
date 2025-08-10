@@ -84,46 +84,8 @@ export async function validateSolanaPayment({
 
         debug_notes.push(`Fee payer public key: ${feePayerKeypair.publicKey.toBase58()}`)
 
-        let txBytes
-        try {
-            if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
-                debug_notes.push('❌ Missing parameters')
-                throw new Error('missing_params')
-            }
-            txBytes = base64js.toByteArray(signedTransactionB64)
-            debug_notes.push(`Transaction bytes length: ${txBytes.length}`)
-
-            // Try to deserialize as versioned transaction first
-            let versionedTx: VersionedTransaction | null = null
-            try {
-                versionedTx = VersionedTransaction.deserialize(txBytes)
-                debug_notes.push('📋 Transaction is versioned format')
-                // Extract the first signer (user's pubkey) before adding fee payer signature
-                if (versionedTx.message.staticAccountKeys.length > 0) {
-                    userPubkey = versionedTx.message.staticAccountKeys[0].toBase58()
-                    debug_notes.push(`👤 User pubkey: ${userPubkey}`)
-                }
-                versionedTx.sign([feePayerKeypair])
-                txBytes = versionedTx.serialize()
-                debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
-            } catch (versionedErr) {
-                try {
-                    const legacyTx = Transaction.from(txBytes)
-                    debug_notes.push('📋 Transaction is legacy format')
-                    // Extract the first signer (user's pubkey) before adding fee payer signature
-                    if (legacyTx.instructions.length > 0 && legacyTx.instructions[0].keys.length > 0) {
-                        userPubkey = legacyTx.instructions[0].keys[0].pubkey.toBase58()
-                        debug_notes.push(`👤 User pubkey: ${userPubkey}`)
-                    }
-                    legacyTx.sign(feePayerKeypair)
-                    txBytes = legacyTx.serialize()
-                    debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
-                } catch (legacyErr) {
-                    debug_notes.push(`❌ Transaction deserialization failed: Versioned error: ${versionedErr.message}, Legacy error: ${legacyErr.message}`)
-                    throw new Error(`Invalid transaction format. Versioned error: ${versionedErr.message}. Legacy error: ${legacyErr.message}`)
-                }
-            }
-        } catch (err) {
+        if (!signedTransactionB64 || !expectedRecipient || !expectedAmountAtomic) {
+            debug_notes.push('❌ Missing parameters')
             const amount = BigInt(expectedAmountAtomic ?? 0);
             const uiAmount = Number(amount) / 10 ** decimals;
             const tokenDisplay = mint ? ` ${tokenLabel}` : ' SOL'
@@ -133,6 +95,46 @@ export async function validateSolanaPayment({
                 user_pubkey: userPubkey,
                 token_label: tokenLabel,
                 error: `💳 Payment required: ${uiAmount}${tokenDisplay} to ${expectedRecipient}`
+            }
+        }
+
+        // ── Decode and try to deserialize (versioned → fallback to legacy)
+        let txBytes = base64js.toByteArray(signedTransactionB64)
+        debug_notes.push(`Transaction bytes length: ${txBytes.length}`)
+
+        // Try to deserialize as versioned transaction first
+        let versionedTx: VersionedTransaction | null = null
+        try {
+            versionedTx = VersionedTransaction.deserialize(txBytes)
+            debug_notes.push('📋 Transaction is versioned format')
+            // Extract the first signer (user's pubkey) before adding fee payer signature
+            if (versionedTx.message.staticAccountKeys.length > 0) {
+                userPubkey = versionedTx.message.staticAccountKeys[0].toBase58()
+                debug_notes.push(`👤 User pubkey: ${userPubkey}`)
+            }
+            versionedTx.sign([feePayerKeypair])
+            txBytes = versionedTx.serialize()
+            debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
+        } catch (versionedErr) {
+            try {
+                const legacyTx = Transaction.from(txBytes)
+                debug_notes.push('📋 Transaction is legacy format')
+                // Extract the first signer (user's pubkey) before adding fee payer signature
+                if (legacyTx.instructions.length > 0 && legacyTx.instructions[0].keys.length > 0) {
+                    userPubkey = legacyTx.instructions[0].keys[0].pubkey.toBase58()
+                    debug_notes.push(`👤 User pubkey: ${userPubkey}`)
+                }
+                legacyTx.sign(feePayerKeypair)
+                txBytes = legacyTx.serialize()
+                debug_notes.push('🖊️ Fee payer signature added (gasless mode)')
+            } catch (legacyErr: any) {
+                debug_notes.push(`❌ Transaction deserialization failed: Versioned error: ${versionedErr?.message}, Legacy error: ${legacyErr?.message}`)
+                return {
+                    status: 'payment_required',
+                    debug_notes,
+                    user_pubkey: userPubkey,
+                    token_label: `Invalid transaction format. Versioned error: ${versionedErr?.message}. Legacy error: ${legacyErr?.message}`
+                }
             }
         }
 
