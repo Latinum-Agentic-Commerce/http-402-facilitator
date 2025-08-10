@@ -174,18 +174,29 @@
                                                 <span class="text-gray-400 text-xs w-8">User:</span>
                                                 <div class="flex items-center space-x-1 min-w-0">
                                                     <code
-                                                        class="font-mono text-gray-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                                        @click="copyToClipboard(log.user_pubkey, 'User address')"
-                                                        :title="log.user_pubkey">
+                                                        class="font-mono text-gray-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-gray-600/20 transition-colors cursor-pointer"
+                                                        @click="openAddressInExplorer(log.user_pubkey, log.network)"
+                                                        :title="`${log.user_pubkey} - Click to view in Solana Explorer`">
                                                         {{ log.user_pubkey }}
                                                     </code>
                                                     <button @click="copyToClipboard(log.user_pubkey, 'User address')"
-                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all">
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all"
+                                                        title="Copy user address">
                                                         <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                                 stroke-width="2"
                                                                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button @click="openAddressInExplorer(log.user_pubkey, log.network)"
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-300 transition-all"
+                                                        title="View in Solana Explorer">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -196,18 +207,29 @@
                                                 <span class="text-gray-400 text-xs w-8">TX:</span>
                                                 <div class="flex items-center space-x-1 min-w-0">
                                                     <code
-                                                        class="font-mono text-blue-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                                        @click="copyToClipboard(log.txid, 'Transaction ID')"
-                                                        :title="log.txid">
+                                                        class="font-mono text-blue-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-blue-600/20 transition-colors cursor-pointer"
+                                                        @click="openInExplorer(log.txid, log.network)"
+                                                        :title="`${log.txid} - Click to view in Solana Explorer`">
                                                         {{ log.txid }}
                                                     </code>
                                                     <button @click="copyToClipboard(log.txid, 'Transaction ID')"
-                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all">
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all"
+                                                        title="Copy transaction ID">
                                                         <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                                 stroke-width="2"
                                                                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button @click="openInExplorer(log.txid, log.network)"
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-300 transition-all"
+                                                        title="View in Solana Explorer">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -218,18 +240,29 @@
                                                 <span class="text-gray-400 text-xs w-8">To:</span>
                                                 <div class="flex items-center space-x-1 min-w-0">
                                                     <code
-                                                        class="font-mono text-purple-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                                        @click="copyToClipboard(log.recipient, 'Recipient address')"
-                                                        :title="log.recipient">
+                                                        class="font-mono text-purple-300 bg-gray-800/50 px-2 py-1 rounded text-xs break-all select-all hover:bg-purple-600/20 transition-colors cursor-pointer"
+                                                        @click="openAddressInExplorer(log.recipient, log.network)"
+                                                        :title="`${log.recipient} - Click to view in Solana Explorer`">
                                                         {{ log.recipient }}
                                                     </code>
                                                     <button @click="copyToClipboard(log.recipient, 'Recipient address')"
-                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all">
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-200 transition-all"
+                                                        title="Copy recipient address">
                                                         <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                                 stroke-width="2"
                                                                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button @click="openAddressInExplorer(log.recipient, log.network)"
+                                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-purple-300 transition-all"
+                                                        title="View in Solana Explorer">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -455,6 +488,46 @@ const copyToClipboard = async (text: string, label: string = 'Text') => {
         }
         document.body.removeChild(textArea)
     }
+}
+
+// Open transaction in Solana Explorer
+const openInExplorer = (txid: string, network?: string) => {
+    if (!txid) return
+    
+    // Determine the correct Solana Explorer URL based on network
+    let baseUrl = 'https://explorer.solana.com/tx/'
+    
+    if (network === 'devnet') {
+        baseUrl += `${txid}?cluster=devnet`
+    } else if (network === 'testnet') {
+        baseUrl += `${txid}?cluster=testnet`
+    } else {
+        // Default to mainnet
+        baseUrl += txid
+    }
+    
+    // Open in new tab
+    window.open(baseUrl, '_blank', 'noopener,noreferrer')
+}
+
+// Open address in Solana Explorer
+const openAddressInExplorer = (address: string, network?: string) => {
+    if (!address) return
+    
+    // Determine the correct Solana Explorer URL based on network
+    let baseUrl = 'https://explorer.solana.com/account/'
+    
+    if (network === 'devnet') {
+        baseUrl += `${address}?cluster=devnet`
+    } else if (network === 'testnet') {
+        baseUrl += `${address}?cluster=testnet`
+    } else {
+        // Default to mainnet
+        baseUrl += address
+    }
+    
+    // Open in new tab
+    window.open(baseUrl, '_blank', 'noopener,noreferrer')
 }
 
 // Set page title and favicon
