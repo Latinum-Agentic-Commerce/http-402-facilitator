@@ -67,7 +67,7 @@ type FinalStatus = 'success' | 'payment_required' | 'failure'
 type TxFormat = 'versioned' | 'legacy'
 
 interface ValidateInput {
-    signedTransactionB64: string
+    signedTransactionB64: string | null
     expectedRecipient: string
     expectedAmountAtomic: bigint | number | string
     mint?: string
@@ -88,7 +88,7 @@ interface ValidateResult {
 // ─────────────────────────────────────────────────────────────────────────────
 function validateInput(input: ValidateInput): string[] {
     const errors: string[] = []
-    if (!input.signedTransactionB64) {
+    if (input.signedTransactionB64 == null || !input.signedTransactionB64) {
         errors.push('Missing signedTransactionB64')
     }
     else {
