@@ -5,22 +5,37 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center">
-                            <img src="/logo.svg" alt="HTTP-402 Facilitator Logo" class="w-10 h-10">
-                        </div>
+                        <NuxtLink to="https://latinum.ai">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center">
+                                <img src="/logo.svg" alt="HTTP-402 Facilitator Logo" class="w-10 h-10">
+                            </div>
+                        </NuxtLink>
                         <div>
                             <h1 class="text-2xl font-bold text-white">Latinum Facilitator Explorer</h1>
                             <p class="text-gray-400 text-sm">HTTP 402 Transaction monitoring dashboard</p>
                         </div>
                     </div>
-                    <button @click="refresh()"
-                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span>Refresh</span>
-                    </button>
+                    <div class="flex items-center space-x-4">
+                        <!-- Navigation Menu -->
+                        <nav class="hidden sm:flex items-center space-x-1">
+                            <NuxtLink to="/"
+                                class="px-3 py-2 text-sm font-medium text-white bg-purple-600/20 border border-purple-500/30 rounded-lg">
+                                Transactions
+                            </NuxtLink>
+                            <NuxtLink to="/stats"
+                                class="px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
+                                Stats
+                            </NuxtLink>
+                        </nav>
+                        <button @click="refresh()"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -64,29 +79,26 @@
                 <div class="px-6 py-4 border-b border-gray-700/50">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-semibold text-white">Recent Transactions</h2>
-                        <span class="text-sm text-gray-400">{{ filteredLogs.length }} of {{ data?.logs?.length }} entries</span>
+                        <span class="text-sm text-gray-400">{{ filteredLogs.length }} of {{ data?.logs?.length }}
+                            entries</span>
                     </div>
-                    
+
                     <!-- Search Bar -->
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        <input
-                            v-model="searchTerm"
-                            type="text"
+                        <input v-model="searchTerm" type="text"
                             placeholder="Search by wallet address, recipient, or transaction ID..."
-                            class="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                        <button
-                            v-if="searchTerm"
-                            @click="searchTerm = ''"
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200"
-                        >
+                            class="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+                        <button v-if="searchTerm" @click="searchTerm = ''"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -126,20 +138,20 @@
                                             'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                                             getTransactionStatus(log) === 'success'
                                                 ? 'bg-green-900/50 text-green-300 border border-green-800'
-                                                : getTransactionStatus(log) === 'payment_required' 
-                                                ? 'bg-blue-900/50 text-blue-300 border border-blue-800'
-                                                : 'bg-red-900/50 text-red-300 border border-red-800'
+                                                : getTransactionStatus(log) === 'payment_required'
+                                                    ? 'bg-blue-900/50 text-blue-300 border border-blue-800'
+                                                    : 'bg-red-900/50 text-red-300 border border-red-800'
                                         ]">
                                             <div :class="[
                                                 'w-1.5 h-1.5 rounded-full mr-1.5',
-                                                getTransactionStatus(log) === 'success' 
-                                                    ? 'bg-green-400' 
+                                                getTransactionStatus(log) === 'success'
+                                                    ? 'bg-green-400'
                                                     : getTransactionStatus(log) === 'payment_required'
-                                                    ? 'bg-blue-400' 
-                                                    : 'bg-red-400'
+                                                        ? 'bg-blue-400'
+                                                        : 'bg-red-400'
                                             ]"></div>
-                                            {{ getTransactionStatus(log) === 'payment_required' 
-                                                ? 'PAYMENT REQUIRED' 
+                                            {{ getTransactionStatus(log) === 'payment_required'
+                                                ? 'PAYMENT REQUIRED'
                                                 : getTransactionStatus(log).toUpperCase() }}
                                         </span>
                                     </td>
@@ -156,8 +168,7 @@
                                         <div v-if="log.amount_atomic" class="text-sm text-gray-300">
                                             <div class="font-mono">
                                                 {{ formatAmount(log.amount_atomic, log.token_label) }}
-                                                <span 
-                                                    class="cursor-help" 
+                                                <span class="cursor-help"
                                                     :title="log.mint_address ? `Mint: ${log.mint_address}` : 'No mint address available'">
                                                     {{ log.token_label || 'USDC' }}
                                                 </span>
@@ -337,9 +348,9 @@ const searchTerm = ref('')
 const filteredLogs = computed(() => {
     const logs = data.value?.logs || []
     if (!searchTerm.value.trim()) return logs
-    
+
     const search = searchTerm.value.toLowerCase().trim()
-    return logs.filter(log => 
+    return logs.filter(log =>
         // Search in user wallet address
         log.user_pubkey?.toLowerCase().includes(search) ||
         // Search in recipient address
@@ -384,7 +395,7 @@ const getTransactionStatus = (log: any) => {
     if (log.status === 'success' || log.status === 'payment_required' || log.status === 'failure') {
         return log.status
     }
-    
+
     // Fallback for old records - check if it's a payment required error
     if (log.status === 'success') {
         return 'success'
@@ -392,14 +403,8 @@ const getTransactionStatus = (log: any) => {
     if (log.validation_error && log.validation_error.includes('💳 Payment required')) {
         return 'payment_required'
     }
-    
-    return 'failure'
-}
 
-const truncateAddress = (address: string, chars: number = 8) => {
-    if (!address) return ''
-    if (address.length <= chars * 2) return address
-    return `${address.slice(0, chars)}...${address.slice(-chars)}`
+    return 'failure'
 }
 
 const formatAmount = (atomicAmount: string | number, tokenLabel?: string, decimals?: number) => {
@@ -493,10 +498,10 @@ const copyToClipboard = async (text: string, label: string = 'Text') => {
 // Open transaction in Solana Explorer
 const openInExplorer = (txid: string, network?: string) => {
     if (!txid) return
-    
+
     // Determine the correct Solana Explorer URL based on network
     let baseUrl = 'https://explorer.solana.com/tx/'
-    
+
     if (network === 'devnet') {
         baseUrl += `${txid}?cluster=devnet`
     } else if (network === 'testnet') {
@@ -505,7 +510,7 @@ const openInExplorer = (txid: string, network?: string) => {
         // Default to mainnet
         baseUrl += txid
     }
-    
+
     // Open in new tab
     window.open(baseUrl, '_blank', 'noopener,noreferrer')
 }
@@ -513,10 +518,10 @@ const openInExplorer = (txid: string, network?: string) => {
 // Open address in Solana Explorer
 const openAddressInExplorer = (address: string, network?: string) => {
     if (!address) return
-    
+
     // Determine the correct Solana Explorer URL based on network
     let baseUrl = 'https://explorer.solana.com/account/'
-    
+
     if (network === 'devnet') {
         baseUrl += `${address}?cluster=devnet`
     } else if (network === 'testnet') {
@@ -525,7 +530,7 @@ const openAddressInExplorer = (address: string, network?: string) => {
         // Default to mainnet
         baseUrl += address
     }
-    
+
     // Open in new tab
     window.open(baseUrl, '_blank', 'noopener,noreferrer')
 }
